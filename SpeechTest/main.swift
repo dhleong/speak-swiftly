@@ -6,7 +6,50 @@
 //  Copyright (c) 2015 Daniel Leong. All rights reserved.
 //
 
-import Foundation
+//import Cocoa
+//
+//class MyDelegate: NSObject, NSSpeechRecognizerDelegate {
+//    
+//    func speechRecognizer(sender: NSSpeechRecognizer, didRecognizeCommand command: AnyObject?) {
+//        NSLog("Hello?")
+//        if let thisCommand: AnyObject = command {
+//            println("Recognized \(thisCommand)");
+//        } else {
+//            println("Bummer")
+//        }
+//    }
+//    
+//}
+//
+//
+//var delegate = MyDelegate()
+//var commands = ["alpha", "bravo", "charlie", "delta", "taxi to runway"]
+//
+//var recognizer = NSSpeechRecognizer()
+//recognizer.commands = commands
+//recognizer.delegate = delegate
+//
+//recognizer.startListening()
+//
+//println("Hello, World!")
+//while (true) {
+//    if (false) {
+//        print("\(delegate)\r");
+//    }
+//}
 
-println("Hello, World!")
 
+var recognizer = SpeechRecognizer()
+recognizer.setGrammar(CommandsGrammar(commands: ["alpha", "bravo", "charlie"]))
+println("Starting...")
+if recognizer.start() {
+
+    println("Started!")
+
+    while (true) {
+        recognizer.idle()
+    }
+} else {
+    
+    println("Failed to initialize")
+}

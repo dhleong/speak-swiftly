@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B609A0691AFC735900F6BF12 /* SpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B609A0681AFC735900F6BF12 /* SpeechRecognizer.swift */; };
+		B609A06B1AFCF5EC00F6BF12 /* SpeechGrammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B609A06A1AFCF5EC00F6BF12 /* SpeechGrammar.swift */; };
 		B6A64B361AFC6B24000FAA82 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6A64B351AFC6B24000FAA82 /* main.swift */; };
 /* End PBXBuildFile section */
 
@@ -23,6 +25,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B609A0681AFC735900F6BF12 /* SpeechRecognizer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SpeechRecognizer.swift; sourceTree = "<group>"; };
+		B609A06A1AFCF5EC00F6BF12 /* SpeechGrammar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SpeechGrammar.swift; sourceTree = "<group>"; };
 		B6A64B321AFC6B24000FAA82 /* SpeechTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SpeechTest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B6A64B351AFC6B24000FAA82 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -58,6 +62,8 @@
 			isa = PBXGroup;
 			children = (
 				B6A64B351AFC6B24000FAA82 /* main.swift */,
+				B609A0681AFC735900F6BF12 /* SpeechRecognizer.swift */,
+				B609A06A1AFCF5EC00F6BF12 /* SpeechGrammar.swift */,
 			);
 			path = SpeechTest;
 			sourceTree = "<group>";
@@ -119,6 +125,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				B6A64B361AFC6B24000FAA82 /* main.swift in Sources */,
+				B609A0691AFC735900F6BF12 /* SpeechRecognizer.swift in Sources */,
+				B609A06B1AFCF5EC00F6BF12 /* SpeechGrammar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -236,6 +244,7 @@
 				B6A64B3B1AFC6B24000FAA82 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
