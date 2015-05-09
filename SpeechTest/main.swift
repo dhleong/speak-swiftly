@@ -6,6 +6,8 @@
 //  Copyright (c) 2015 Daniel Leong. All rights reserved.
 //
 
+import Foundation
+
 //import Cocoa
 //
 //class MyDelegate: NSObject, NSSpeechRecognizerDelegate {
@@ -46,9 +48,12 @@ if recognizer.start() {
 
     println("Started!")
 
-    while (true) {
-        recognizer.idle()
-    }
+//    while (true) {
+//        recognizer.idle()
+//        
+//        sleep(1)
+//    }
+    dispatch_main()
 } else {
     
     println("Failed to initialize")

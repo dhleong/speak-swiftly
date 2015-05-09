@@ -18,6 +18,11 @@ public protocol SpeechRecognizerDelegate {
 public class SpeechRecognizer {
     public var delegate: SpeechRecognizerDelegate?
     
+    /// The queue on which callbacks will be fired
+    public lazy var dispatchQueue: dispatch_queue_t = {
+        dispatch_get_main_queue()
+    }()
+   
     // obj-c / swift callback bridging
     var bridgeBlock: COpaquePointer?
     var callback: SRCallBackUPP?
@@ -56,24 +61,77 @@ public class SpeechRecognizer {
             println("Callback ERROR!")
         }
         
-        // TODO we're supposed to enqueue this for handling on our own thread
-        
         switch (Int(callback.what)) {
         case kSRNotifyRecognitionDone:
-            var resultPtr: UnsafePointer<SRRecognitionResult> = unsafeBitCast(callback.message, UnsafePointer<SRRecognitionResult>.self)
+            var resultPtr: UnsafePointer<SRRecognitionResult> =
+                unsafeBitCast(callback.message, UnsafePointer<SRRecognitionResult>.self)
             var result = resultPtr.memory
             
-//            var resultStr: [CChar] = []
-//            resultStr.reserveCapacity(MAX_RECOGNITION_LENGTH)
-            var resultStrPtr = UnsafeMutablePointer<[CChar]>.alloc(MAX_RECOGNITION_LENGTH)
-            var resultStrLen = UnsafeMutablePointer<Int>.alloc(1)
-            SRGetProperty(result, OSType(kSRTEXTFormat), resultStrPtr, resultStrLen)
-            println("Recognition done! \(resultStrPtr.memory)")
+            // as requested by the docs, we dispatch to another thread for processing
+            dispatch_async(dispatchQueue) {
+                self.handleResult(result)
+                SRReleaseObject(result)
+            }
             break;
         default:
             println("Huh")
         }
         
+    }
+
+    func handleResult(result: SRRecognitionResult) {
+        var model: SRLanguageModel = SRLanguageModel()
+        var size: Int = sizeof(UnsafePointer<SRLanguageModel>)
+        var theErr = SRGetProperty(result, OSType(kSRLanguageModelFormat), &model, &size)
+        if OSStatus(theErr) != noErr {
+            println("GetLang ERROR = \(theErr)")
+            return
+        }
+        
+        processResult(model)
+        
+        SRReleaseObject(model)
+    }
+
+    func processResult(model: SRLanguageModel) {
+        
+        var refCon = 0
+        var size = sizeof(Int)
+        var type = OSType(kSRRefCon)
+        
+        println("model=\(model); type=\(type)")
+        SRGetProperty(model, type, &refCon, &size)
+        
+        println("model=\(model); ref=\(refCon)")
+    }
+
+    func handleResult2(result: SRRecognitionResult) {
+        
+//            var resultStr: [CChar] = []
+//            resultStr.reserveCapacity(MAX_RECOGNITION_LENGTH)
+            var resultStr = [CChar](count: MAX_RECOGNITION_LENGTH, repeatedValue: 0)
+//            resultStr.withUnsafeMutableBufferPointer { (buffer) in
+//                var resultStrLen = 0
+//    //            println("ptr->\(resultStrPtr) :: \(resultStrLen)")
+//                SRGetProperty(result, OSType(kSRTEXTFormat), &resultStr, &resultStrLen)
+//            }
+            resultStr.withUnsafeMutableBufferPointer { (inout buffer: UnsafeMutableBufferPointer<CChar>) -> () in
+                    
+                var resultStrLen = MAX_RECOGNITION_LENGTH
+    //            println("ptr->\(resultStrPtr) :: \(resultStrLen)")
+                SRGetProperty(result, OSType(kSRTEXTFormat), &resultStr, &resultStrLen)
+                println("Done! \(buffer)")
+            }
+            
+            
+////            var resultStrPtr = UnsafeMutablePointer<[CChar]>(resultStr)
+////            var resultStrPtr = &resultStr[0]
+////            var resultStrLen = UnsafeMutablePointer<Int>.alloc(1)
+//            var resultStrLen = 0
+////            println("ptr->\(resultStrPtr) :: \(resultStrLen)")
+//            SRGetProperty(result, OSType(kSRTEXTFormat), &resultStr, &resultStrLen)
+////            println("Recognition done! \(resultStrPtr.memory)")
+            println("Done! \(resultStr)")
     }
     
     public func setGrammar(grammar: SpeechGrammar) -> Bool {
@@ -112,6 +170,16 @@ public class SpeechRecognizer {
         // attach listeners
         var size = sizeof(UnsafePointer<Void>)
         theErr = SRSetProperty(recognizer, OSType(kSRCallBackParam), &callbackParam, size)
+        if OSStatus(theErr) != noErr {
+            stop()
+            return false
+        }
+        
+        var modes = kSRHasFeedbackHasListenModes
+        
+        theErr = SRSetProperty(system,
+            OSType(kSRFeedbackAndListeningModes), &modes,
+            sizeof(UnsafePointer<Int>));
         if OSStatus(theErr) != noErr {
             stop()
             return false

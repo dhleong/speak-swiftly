@@ -42,9 +42,15 @@ public class SGWords: SpeechGrammarObject {
         SRNewLanguageModel(system, &model!, "Words", 5)
         
         if let model = self.model {
+            var number = 42; // NB bogus values for testing purposes...
+            SRSetProperty(model, OSType(kSRRefCon), &number, sizeof(Int))
+            
+            var index = 0
             for word in words {
                 var wordObj: SRWord = SRWord();
                 SRNewWord(system, &wordObj, word, Int32(count(word)))
+                SRSetProperty(wordObj, OSType(kSRRefCon), &index, sizeof(Int))
+                index++
                 
                 SRAddLanguageObject(model, wordObj)
             }
