@@ -9,6 +9,8 @@
 import Carbon
 import Foundation
 
+let MAX_RECOGNITION_LENGTH = 255
+
 public protocol SpeechRecognizerDelegate {
     func onRecognition()
 }
@@ -16,6 +18,9 @@ public protocol SpeechRecognizerDelegate {
 public class SpeechRecognizer {
     public var delegate: SpeechRecognizerDelegate?
     
+    // obj-c / swift callback bridging
+    var bridgeBlock: COpaquePointer?
+    var callback: SRCallBackUPP?
     var callbackParam: SRCallBackParam?
     
     var system: SRRecognitionSystem = SRRecognitionSystem();
@@ -25,19 +30,50 @@ public class SpeechRecognizer {
     var started = false
     
     public init() {
+
         // see: http://stackoverflow.com/a/29375116
         var bridge : @objc_block (UnsafeMutablePointer<SRCallBackStruct>) -> Void =
-        { (callbackStruct) in
-            println("BRIDGE!")
+        { (callbackStructPtr) in
+            let callbackStruct = callbackStructPtr.memory
             self.speechCallback(callbackStruct)
         }
-        let imp: COpaquePointer = imp_implementationWithBlock(unsafeBitCast(bridge, AnyObject.self))
-        let callback: SRCallBackUPP = unsafeBitCast(imp, SRCallBackUPP.self)
+        bridgeBlock = imp_implementationWithBlock(unsafeBitCast(bridge, AnyObject.self))
+        let ptr = unsafeBitCast(bridgeBlock!, SRCallBackProcPtr.self)
+        let callback = NewSRCallBackUPP(ptr)
+        self.callback = callback
+        
         callbackParam = SRCallBackParam(callBack: callback, refCon: nil)
     }
+
+    deinit {
+        imp_removeBlock(bridgeBlock!)
+        DisposeSRCallBackUPP(callback!)
+    }
     
-    func speechCallback(callback: UnsafeMutablePointer<SRCallBackStruct>) {
-        println("Callback! \(callback)")
+    func speechCallback(callback: SRCallBackStruct) {
+        println("Callback! what=\(callback.what); message=\(callback.message); status=\(callback.status)")
+        if OSStatus(callback.status) != noErr {
+            println("Callback ERROR!")
+        }
+        
+        // TODO we're supposed to enqueue this for handling on our own thread
+        
+        switch (Int(callback.what)) {
+        case kSRNotifyRecognitionDone:
+            var resultPtr: UnsafePointer<SRRecognitionResult> = unsafeBitCast(callback.message, UnsafePointer<SRRecognitionResult>.self)
+            var result = resultPtr.memory
+            
+//            var resultStr: [CChar] = []
+//            resultStr.reserveCapacity(MAX_RECOGNITION_LENGTH)
+            var resultStrPtr = UnsafeMutablePointer<[CChar]>.alloc(MAX_RECOGNITION_LENGTH)
+            var resultStrLen = UnsafeMutablePointer<Int>.alloc(1)
+            SRGetProperty(result, OSType(kSRTEXTFormat), resultStrPtr, resultStrLen)
+            println("Recognition done! \(resultStrPtr.memory)")
+            break;
+        default:
+            println("Huh")
+        }
+        
     }
     
     public func setGrammar(grammar: SpeechGrammar) -> Bool {
@@ -73,8 +109,9 @@ public class SpeechRecognizer {
             return false
         }
         
-        // TODO attach listeners
-        theErr = SRSetProperty(recognizer, OSType(kSRCallBackParam), &callbackParam, 4)
+        // attach listeners
+        var size = sizeof(UnsafePointer<Void>)
+        theErr = SRSetProperty(recognizer, OSType(kSRCallBackParam), &callbackParam, size)
         if OSStatus(theErr) != noErr {
             stop()
             return false
