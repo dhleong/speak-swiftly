@@ -14,8 +14,7 @@ var nato = SGChoice(pickFromStrings: ["alpha", "bravo", "charlie"])
 var number = SGChoice(pickFromStrings: ["one", "two", "three"])
 
 var name = SGRepeat(repeat: nato, atMost: 3)
-//var grammar = SGPath(path: [name, SGOptional(with: number)])
-var grammar = SGRepeat(repeat: nato, atLeast: 3, atMost: 5)
+var grammar = SGPath(path: [name, SGOptional(with: number)])
 
 recognizer.setGrammar(grammar)
 println("Starting...")

@@ -15,12 +15,16 @@ public protocol SpeechGrammarObject {
     func release();
     
     func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject;
+    
+    /// The "length" of this object, typically in number of words
+    ///  along a single path. Mostly for internal use
+    func length() -> Int
 }
 
 public class SGWord: SpeechGrammarObject {
     static var id: Int = 0
     
-    // TODO support user-provided refcon...
+    // TODO support user-provided refcon...?
     let myId: Int = id++
     let word: String
     var wordObj: SRWord? = SRWord()
@@ -40,6 +44,10 @@ public class SGWord: SpeechGrammarObject {
         SRNewWord(system, &wordObj!, word, Int32(count(word)))
         SRSetProperty(wordObj!, OSType(kSRRefCon), &myId, sizeof(Int))
         return wordObj!
+    }
+    
+    public func length() -> Int {
+        return 1
     }
 }
 
@@ -78,13 +86,24 @@ public class SGChoice: SpeechGrammarObject {
             var number = 42; // NB bogus values for testing purposes...
             SRSetProperty(model, OSType(kSRRefCon), &number, sizeof(Int))
             
-            var index = 0
+            // sort the objects before adding---order is important!
+            //  longer phrases MUST be before shorter ones for the
+            //  system to recognize them
+            choices.sort() { $0.length() > $1.length() }
+            
             for word in choices {
                 SRAddLanguageObject(model, word.asLanguageObject(system))
             }
         }
         
         return model!
+    }
+    
+    public func length() -> Int {
+        // the length of a Choice is the length of its longest choice
+        return choices.reduce(0) {
+            max($0, $1.length())
+        }
     }
 }
 
@@ -120,6 +139,9 @@ public class SGPath: SpeechGrammarObject {
         return path!
     }
 
+    public func length() -> Int {
+        return objs.count
+    }
 }
 
 /// Repeat the given object some number of times
@@ -127,16 +149,16 @@ public class SGRepeat: SpeechGrammarObject {
     
     let delegate: SGChoice
     
-    init(repeat: SpeechGrammarObject, atLeast min: Int = 1, atMost max: Int) {
+    init(repeat: SpeechGrammarObject, atLeast rawMin: Int = 1, atMost max: Int) {
         delegate = SGChoice(pickFrom: [])
 
-        var ourMin = min
+        var min = rawMin
         if min == 0 {
             delegate.addChoice(SGEmpty())
-            ourMin++
+            min++
         }
         
-        for i in ourMin...max {
+        for i in min...max {
             var repeated = SGPath(path: [SpeechGrammarObject](count: i, repeatedValue: repeat))
             delegate.addChoice(repeated)
         }
@@ -150,6 +172,9 @@ public class SGRepeat: SpeechGrammarObject {
         return delegate.asLanguageObject(system)
     }
     
+    public func length() -> Int {
+        return delegate.length()
+    }
 }
 
 /// Convenience for an object that may or may not be present
@@ -160,14 +185,8 @@ public class SGOptional: SGRepeat {
 }
 
 /// Value for SGChoice to represent a null choice
-internal class SGEmpty: SpeechGrammarObject {
-    var delegate = SGPath(path: [])
-    
-    internal func release() {
-        delegate.release()
-    }
-    
-    internal func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
-        return delegate.asLanguageObject(system)
+internal class SGEmpty: SGPath {
+    init() {
+        super.init(path: [])
     }
 }
