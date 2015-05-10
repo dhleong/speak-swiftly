@@ -1,6 +1,6 @@
 //
 //  SpeechRecognizer.swift
-//  SpeechTest
+//  SpeakSwiftly
 //
 //  Created by Daniel Leong on 5/8/15.
 //  Copyright (c) 2015 Daniel Leong. All rights reserved.

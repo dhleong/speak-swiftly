@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>B1799DFC-6DB6-42A9-98CB-5EE2777E2E43</string>
+	<key>IDESourceControlProjectName</key>
+	<string>SpeakSwiftly</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>BF23A699E1F823117C493D814E476332B3937170</key>
+		<string>gitlab.com:dhleong/SpeechTest.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>SpeakSwiftly.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>BF23A699E1F823117C493D814E476332B3937170</key>
+		<string>../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>gitlab.com:dhleong/SpeechTest.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>BF23A699E1F823117C493D814E476332B3937170</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>BF23A699E1F823117C493D814E476332B3937170</string>
+			<key>IDESourceControlWCCName</key>
+			<string>SpeechTest</string>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "B6A64B311AFC6B24000FAA82"
-               BuildableName = "SpeechTest"
-               BlueprintName = "SpeechTest"
-               ReferencedContainer = "container:SpeechTest.xcodeproj">
+               BuildableName = "SpeakSwiftly"
+               BlueprintName = "SpeakSwiftly"
+               ReferencedContainer = "container:SpeakSwiftly.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "B6A64B311AFC6B24000FAA82"
-            BuildableName = "SpeechTest"
-            BlueprintName = "SpeechTest"
-            ReferencedContainer = "container:SpeechTest.xcodeproj">
+            BuildableName = "SpeakSwiftly"
+            BlueprintName = "SpeakSwiftly"
+            ReferencedContainer = "container:SpeakSwiftly.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </TestAction>
@@ -53,9 +53,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "B6A64B311AFC6B24000FAA82"
-            BuildableName = "SpeechTest"
-            BlueprintName = "SpeechTest"
-            ReferencedContainer = "container:SpeechTest.xcodeproj">
+            BuildableName = "SpeakSwiftly"
+            BlueprintName = "SpeakSwiftly"
+            ReferencedContainer = "container:SpeakSwiftly.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "B6A64B311AFC6B24000FAA82"
-            BuildableName = "SpeechTest"
-            BlueprintName = "SpeechTest"
-            ReferencedContainer = "container:SpeechTest.xcodeproj">
+            BuildableName = "SpeakSwiftly"
+            BlueprintName = "SpeakSwiftly"
+            ReferencedContainer = "container:SpeakSwiftly.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
