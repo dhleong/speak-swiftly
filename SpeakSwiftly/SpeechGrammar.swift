@@ -17,12 +17,6 @@ public protocol SpeechGrammarObject {
     func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject;
 }
 
-public protocol SpeechGrammar: SpeechGrammarObject {
-    
-    func asLanguageModel(system: SRRecognitionSystem) -> SRLanguageModel;
-   
-}
-
 public class SGWord: SpeechGrammarObject {
     static var id: Int = 0
     
@@ -50,7 +44,7 @@ public class SGWord: SpeechGrammarObject {
 }
 
 /// Choose between provided Grammar Objects
-public class SGChoice: SpeechGrammarObject, SpeechGrammar {
+public class SGChoice: SpeechGrammarObject {
     
     var choices: [SpeechGrammarObject]
     var model: SRLanguageModel? = SRLanguageModel()
@@ -78,11 +72,7 @@ public class SGChoice: SpeechGrammarObject, SpeechGrammar {
     }
     
     public func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
-        return asLanguageModel(system)
-    }
-    
-    public func asLanguageModel(system: SRRecognitionSystem) -> SRLanguageModel {
-        SRNewLanguageModel(system, &model!, "Words", 5)
+        SRNewLanguageModel(system, &model!, "Choice", 6)
         
         if let model = self.model {
             var number = 42; // NB bogus values for testing purposes...
@@ -99,10 +89,9 @@ public class SGChoice: SpeechGrammarObject, SpeechGrammar {
 }
 
 /// A sequence of Grammar Objects
-public class SGPath: SpeechGrammar {
+public class SGPath: SpeechGrammarObject {
     
     var objs: [SpeechGrammarObject]
-    var model: SRLanguageModel? = SRLanguageModel()
     var path: SRPath? = SRPath()
     
     init(path objs: [SpeechGrammarObject]) {
@@ -113,19 +102,10 @@ public class SGPath: SpeechGrammar {
         if let obj = self.path {
             SRReleaseObject(obj)
         }
-        if let obj = self.model {
-            SRReleaseObject(obj)
-        }
         
         for obj in objs {
             obj.release()
         }
-    }
-    
-    public func asLanguageModel(system: SRRecognitionSystem) -> SRLanguageModel {
-        SRNewLanguageModel(system, &model!, "String", 6)
-        SRAddLanguageObject(model!, asLanguageObject(system))
-        return model!
     }
 
     public func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
@@ -140,4 +120,54 @@ public class SGPath: SpeechGrammar {
         return path!
     }
 
+}
+
+/// Repeat the given object some number of times
+public class SGRepeat: SpeechGrammarObject {
+    
+    let delegate: SGChoice
+    
+    init(repeat: SpeechGrammarObject, atLeast min: Int = 1, atMost max: Int) {
+        delegate = SGChoice(pickFrom: [])
+
+        var ourMin = min
+        if min == 0 {
+            delegate.addChoice(SGEmpty())
+            ourMin++
+        }
+        
+        for i in ourMin...max {
+            var repeated = SGPath(path: [SpeechGrammarObject](count: i, repeatedValue: repeat))
+            delegate.addChoice(repeated)
+        }
+    }
+    
+    public func release() {
+        delegate.release()
+    }
+    
+    public func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
+        return delegate.asLanguageObject(system)
+    }
+    
+}
+
+/// Convenience for an object that may or may not be present
+public class SGOptional: SGRepeat {
+    init(with obj: SpeechGrammarObject) {
+        super.init(repeat: obj, atLeast: 0, atMost: 1)
+    }
+}
+
+/// Value for SGChoice to represent a null choice
+internal class SGEmpty: SpeechGrammarObject {
+    var delegate = SGPath(path: [])
+    
+    internal func release() {
+        delegate.release()
+    }
+    
+    internal func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
+        return delegate.asLanguageObject(system)
+    }
 }

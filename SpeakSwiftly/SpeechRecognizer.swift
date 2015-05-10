@@ -24,7 +24,7 @@ public class SpeechRecognizer {
     
     var system: SRRecognitionSystem = SRRecognitionSystem();
     var recognizer: SRRecognizer = SRRecognizer();
-    var grammar: SpeechGrammar?;
+    var grammar: SpeechGrammarObject?;
 
     var started = false
     
@@ -63,7 +63,6 @@ public class SpeechRecognizer {
                 return theErr
             }
 
-            println("EVENT! \(theAEevent) status=\(recognitionStatus)")
             self.handleResult2(speechResult)
             SRReleaseObject(speechResult)
             return OSErr(0)
@@ -139,7 +138,7 @@ public class SpeechRecognizer {
         println("Done! \(result)")
     }
     
-    public func setGrammar(grammar: SpeechGrammar) -> Bool {
+    public func setGrammar(grammar: SpeechGrammarObject) -> Bool {
         if (started) {
             return false;
         }
@@ -165,8 +164,8 @@ public class SpeechRecognizer {
             return false
         }
         
-        if let gram = grammar {
-            SRSetLanguageModel(recognizer, gram.asLanguageModel(system))
+        if let grammar = self.grammar {
+            SRSetLanguageModel(recognizer, grammar.asLanguageObject(system))
         } else {
             stop()
             return false
@@ -214,4 +213,5 @@ public class SpeechRecognizer {
         
         started = false;
     }
+
 }
