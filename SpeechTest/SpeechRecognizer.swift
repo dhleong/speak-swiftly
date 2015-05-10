@@ -48,8 +48,56 @@ public class SpeechRecognizer {
         self.callback = callback
         
         callbackParam = SRCallBackParam(callBack: callback, refCon: nil)
+        
+        prepare()
     }
+    
+    func prepare() {
+        var appleBridge: @objc_block (AppleEventPtr, AppleEventPtr, Int) -> OSErr =
+        { (theAEevent, reply, refcon) in
+            
+            var actualType: DescType = DescType()
+            var recognitionStatus: OSErr = OSErr(0)
+            var actualSize = 0;
+            
+            var theErr = AEGetParamPtr(theAEevent, OSType(keySRSpeechStatus),
+                DescType(typeSInt16), // typeShortInteger
+                &actualType,
+                &recognitionStatus, sizeof(UnsafePointer<OSErr>),
+                &actualSize);
+            if OSStatus(theErr) != noErr {
+                println("Error getting speech status: \(theErr)")
+                return theErr
+            }
+            if OSStatus(recognitionStatus) != noErr {
+                println("Speech recognition error: \(recognitionStatus)")
+                return recognitionStatus
+            }
+            
+            var speechResult: SRRecognitionResult = SRRecognitionResult()
+            actualSize = 0
+            theErr = AEGetParamPtr(theAEevent, OSType(keySRSpeechResult),
+                DescType(typeSRSpeechResult), &actualType,
+                &speechResult, sizeof(UnsafePointer<SRRecognitionResult>),
+                &actualSize)
+            if OSStatus(theErr) != noErr {
+                println("Error getting recognition result: \(theErr)")
+                return theErr
+            }
 
+            println("EVENT! \(theAEevent) status=\(recognitionStatus)")
+            self.handleResult2(speechResult)
+            SRReleaseObject(speechResult)
+            return OSErr(0)
+        }
+        
+        var bridgeBlock = imp_implementationWithBlock(unsafeBitCast(appleBridge, AnyObject.self))
+        let ptr = unsafeBitCast(bridgeBlock, AEEventHandlerUPP.self)
+//        let callback: AEEventHandlerUPP = NewAEEventHandlerUPP(ptr)
+        let callback = ptr
+        AEInstallEventHandler(AEEventClass(kAESpeechSuite), AEEventID(kAESpeechDone), callback, nil, Boolean(0))
+    }
+    
     deinit {
         imp_removeBlock(bridgeBlock!)
         DisposeSRCallBackUPP(callback!)
@@ -80,20 +128,41 @@ public class SpeechRecognizer {
     }
 
     func handleResult(result: SRRecognitionResult) {
-        var model: SRLanguageModel = SRLanguageModel()
+        println("result = \(result)")
+        var modelPtr = UnsafeMutablePointer<SRLanguageModel>.alloc(1)
         var size: Int = sizeof(UnsafePointer<SRLanguageModel>)
-        var theErr = SRGetProperty(result, OSType(kSRLanguageModelFormat), &model, &size)
+        var theErr = SRGetProperty(result, OSType(kSRLanguageModelFormat), modelPtr, &size)
         if OSStatus(theErr) != noErr {
             println("GetLang ERROR = \(theErr)")
             return
         }
         
+        var model = modelPtr.memory
         processResult(model)
         
         SRReleaseObject(model)
+        modelPtr.destroy()
     }
 
     func processResult(model: SRLanguageModel) {
+//        
+//        var itemsCount = -1;
+//        var theErr = SRCountItems(model, &itemsCount)
+//        if OSStatus(theErr) != noErr {
+//            println("err: \(theErr)")
+//            return;
+//        }
+//        if (itemsCount <= 0) {
+//            println("No items in the result model \(itemsCount)")
+//            return;
+//        } else {
+//            println("FOUND \(itemsCount) items!")
+//        }
+
+////        var object: SRLanguageObject = SRLanguageObject()
+//        var objectPtr = UnsafeMutablePointer<SRLanguageObject>.alloc(1)
+//        SRGetIndexedItem(model, objectPtr, 0)
+//        var object = objectPtr.memory
         
         var refCon = 0
         var size = sizeof(Int)
@@ -103,6 +172,8 @@ public class SpeechRecognizer {
         SRGetProperty(model, type, &refCon, &size)
         
         println("model=\(model); ref=\(refCon)")
+        
+//        objectPtr.destroy()
     }
 
     func handleResult2(result: SRRecognitionResult) {
@@ -119,7 +190,7 @@ public class SpeechRecognizer {
                     
                 var resultStrLen = MAX_RECOGNITION_LENGTH
     //            println("ptr->\(resultStrPtr) :: \(resultStrLen)")
-                SRGetProperty(result, OSType(kSRTEXTFormat), &resultStr, &resultStrLen)
+                SRGetProperty(result, OSType(kSRTEXTFormat), buffer.baseAddress, &resultStrLen)
                 println("Done! \(buffer)")
             }
             
@@ -131,7 +202,8 @@ public class SpeechRecognizer {
 ////            println("ptr->\(resultStrPtr) :: \(resultStrLen)")
 //            SRGetProperty(result, OSType(kSRTEXTFormat), &resultStr, &resultStrLen)
 ////            println("Recognition done! \(resultStrPtr.memory)")
-            println("Done! \(resultStr)")
+            var result = String.fromCString(resultStr)
+            println("Done! \(result)")
     }
     
     public func setGrammar(grammar: SpeechGrammar) -> Bool {
@@ -166,15 +238,15 @@ public class SpeechRecognizer {
             stop()
             return false
         }
-        
-        // attach listeners
-        var size = sizeof(UnsafePointer<Void>)
-        theErr = SRSetProperty(recognizer, OSType(kSRCallBackParam), &callbackParam, size)
-        if OSStatus(theErr) != noErr {
-            stop()
-            return false
-        }
-        
+
+//        // attach listeners
+//        var size = sizeof(UnsafePointer<Void>)
+//        theErr = SRSetProperty(recognizer, OSType(kSRCallBackParam), &callbackParam, size)
+//        if OSStatus(theErr) != noErr {
+//            stop()
+//            return false
+//        }
+
         var modes = kSRHasFeedbackHasListenModes
         
         theErr = SRSetProperty(system,

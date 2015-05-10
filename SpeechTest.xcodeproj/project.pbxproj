@@ -29,6 +29,9 @@
 		B609A06A1AFCF5EC00F6BF12 /* SpeechGrammar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SpeechGrammar.swift; sourceTree = "<group>"; };
 		B6A64B321AFC6B24000FAA82 /* SpeechTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SpeechTest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B6A64B351AFC6B24000FAA82 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		B6D7F6571AFFAAEF003848B0 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
+		B6D7F6591AFFAB00003848B0 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		B6D7F65A1AFFAB00003848B0 /* AppKitScripting.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKitScripting.framework; path = System/Library/Frameworks/AppKitScripting.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,6 +48,9 @@
 		B6A64B291AFC6B24000FAA82 = {
 			isa = PBXGroup;
 			children = (
+				B6D7F6591AFFAB00003848B0 /* AppKit.framework */,
+				B6D7F65A1AFFAB00003848B0 /* AppKitScripting.framework */,
+				B6D7F6571AFFAAEF003848B0 /* Carbon.framework */,
 				B6A64B341AFC6B24000FAA82 /* SpeechTest */,
 				B6A64B331AFC6B24000FAA82 /* Products */,
 			);
