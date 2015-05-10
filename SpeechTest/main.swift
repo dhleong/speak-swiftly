@@ -8,41 +8,15 @@
 
 import Foundation
 
-//import Cocoa
-//
-//class MyDelegate: NSObject, NSSpeechRecognizerDelegate {
-//    
-//    func speechRecognizer(sender: NSSpeechRecognizer, didRecognizeCommand command: AnyObject?) {
-//        NSLog("Hello?")
-//        if let thisCommand: AnyObject = command {
-//            println("Recognized \(thisCommand)");
-//        } else {
-//            println("Bummer")
-//        }
-//    }
-//    
-//}
-//
-//
-//var delegate = MyDelegate()
-//var commands = ["alpha", "bravo", "charlie", "delta", "taxi to runway"]
-//
-//var recognizer = NSSpeechRecognizer()
-//recognizer.commands = commands
-//recognizer.delegate = delegate
-//
-//recognizer.startListening()
-//
-//println("Hello, World!")
-//while (true) {
-//    if (false) {
-//        print("\(delegate)\r");
-//    }
-//}
-
-
 var recognizer = SpeechRecognizer()
-recognizer.setGrammar(CommandsGrammar(commands: ["alpha", "bravo", "charlie"]))
+
+var nato = SGChoice(pickFromStrings: ["alpha", "bravo", "charlie"])
+var three = SGPath(path: [nato, nato, nato])
+var two = SGPath(path: [nato, nato])
+var one = nato
+var grammar = SGChoice(pickFrom: [one, two, three])
+
+recognizer.setGrammar(grammar)
 println("Starting...")
 if recognizer.start() {
 

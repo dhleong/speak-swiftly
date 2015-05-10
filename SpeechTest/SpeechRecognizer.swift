@@ -18,15 +18,9 @@ public protocol SpeechRecognizerDelegate {
 public class SpeechRecognizer {
     public var delegate: SpeechRecognizerDelegate?
     
-    /// The queue on which callbacks will be fired
-    public lazy var dispatchQueue: dispatch_queue_t = {
-        dispatch_get_main_queue()
-    }()
-   
     // obj-c / swift callback bridging
     var bridgeBlock: COpaquePointer?
-    var callback: SRCallBackUPP?
-    var callbackParam: SRCallBackParam?
+    var appleEventCallback: AEEventHandlerUPP?
     
     var system: SRRecognitionSystem = SRRecognitionSystem();
     var recognizer: SRRecognizer = SRRecognizer();
@@ -37,22 +31,6 @@ public class SpeechRecognizer {
     public init() {
 
         // see: http://stackoverflow.com/a/29375116
-        var bridge : @objc_block (UnsafeMutablePointer<SRCallBackStruct>) -> Void =
-        { (callbackStructPtr) in
-            let callbackStruct = callbackStructPtr.memory
-            self.speechCallback(callbackStruct)
-        }
-        bridgeBlock = imp_implementationWithBlock(unsafeBitCast(bridge, AnyObject.self))
-        let ptr = unsafeBitCast(bridgeBlock!, SRCallBackProcPtr.self)
-        let callback = NewSRCallBackUPP(ptr)
-        self.callback = callback
-        
-        callbackParam = SRCallBackParam(callBack: callback, refCon: nil)
-        
-        prepare()
-    }
-    
-    func prepare() {
         var appleBridge: @objc_block (AppleEventPtr, AppleEventPtr, Int) -> OSErr =
         { (theAEevent, reply, refcon) in
             
@@ -91,42 +69,14 @@ public class SpeechRecognizer {
             return OSErr(0)
         }
         
-        var bridgeBlock = imp_implementationWithBlock(unsafeBitCast(appleBridge, AnyObject.self))
-        let ptr = unsafeBitCast(bridgeBlock, AEEventHandlerUPP.self)
-//        let callback: AEEventHandlerUPP = NewAEEventHandlerUPP(ptr)
-        let callback = ptr
-        AEInstallEventHandler(AEEventClass(kAESpeechSuite), AEEventID(kAESpeechDone), callback, nil, Boolean(0))
+        bridgeBlock = imp_implementationWithBlock(unsafeBitCast(appleBridge, AnyObject.self))
+        appleEventCallback = unsafeBitCast(bridgeBlock!, AEEventHandlerUPP.self)
     }
     
     deinit {
         imp_removeBlock(bridgeBlock!)
-        DisposeSRCallBackUPP(callback!)
     }
     
-    func speechCallback(callback: SRCallBackStruct) {
-        println("Callback! what=\(callback.what); message=\(callback.message); status=\(callback.status)")
-        if OSStatus(callback.status) != noErr {
-            println("Callback ERROR!")
-        }
-        
-        switch (Int(callback.what)) {
-        case kSRNotifyRecognitionDone:
-            var resultPtr: UnsafePointer<SRRecognitionResult> =
-                unsafeBitCast(callback.message, UnsafePointer<SRRecognitionResult>.self)
-            var result = resultPtr.memory
-            
-            // as requested by the docs, we dispatch to another thread for processing
-            dispatch_async(dispatchQueue) {
-                self.handleResult(result)
-                SRReleaseObject(result)
-            }
-            break;
-        default:
-            println("Huh")
-        }
-        
-    }
-
     func handleResult(result: SRRecognitionResult) {
         println("result = \(result)")
         var modelPtr = UnsafeMutablePointer<SRLanguageModel>.alloc(1)
@@ -177,33 +127,16 @@ public class SpeechRecognizer {
     }
 
     func handleResult2(result: SRRecognitionResult) {
+    
+        var resultStr = [CChar](count: MAX_RECOGNITION_LENGTH, repeatedValue: 0)
+        resultStr.withUnsafeMutableBufferPointer { (inout buffer: UnsafeMutableBufferPointer<CChar>) -> () in
+                
+            var resultStrLen = MAX_RECOGNITION_LENGTH
+            SRGetProperty(result, OSType(kSRTEXTFormat), buffer.baseAddress, &resultStrLen)
+        }
         
-//            var resultStr: [CChar] = []
-//            resultStr.reserveCapacity(MAX_RECOGNITION_LENGTH)
-            var resultStr = [CChar](count: MAX_RECOGNITION_LENGTH, repeatedValue: 0)
-//            resultStr.withUnsafeMutableBufferPointer { (buffer) in
-//                var resultStrLen = 0
-//    //            println("ptr->\(resultStrPtr) :: \(resultStrLen)")
-//                SRGetProperty(result, OSType(kSRTEXTFormat), &resultStr, &resultStrLen)
-//            }
-            resultStr.withUnsafeMutableBufferPointer { (inout buffer: UnsafeMutableBufferPointer<CChar>) -> () in
-                    
-                var resultStrLen = MAX_RECOGNITION_LENGTH
-    //            println("ptr->\(resultStrPtr) :: \(resultStrLen)")
-                SRGetProperty(result, OSType(kSRTEXTFormat), buffer.baseAddress, &resultStrLen)
-                println("Done! \(buffer)")
-            }
-            
-            
-////            var resultStrPtr = UnsafeMutablePointer<[CChar]>(resultStr)
-////            var resultStrPtr = &resultStr[0]
-////            var resultStrLen = UnsafeMutablePointer<Int>.alloc(1)
-//            var resultStrLen = 0
-////            println("ptr->\(resultStrPtr) :: \(resultStrLen)")
-//            SRGetProperty(result, OSType(kSRTEXTFormat), &resultStr, &resultStrLen)
-////            println("Recognition done! \(resultStrPtr.memory)")
-            var result = String.fromCString(resultStr)
-            println("Done! \(result)")
+        var result = String.fromCString(resultStr)
+        println("Done! \(result)")
     }
     
     public func setGrammar(grammar: SpeechGrammar) -> Bool {
@@ -239,13 +172,9 @@ public class SpeechRecognizer {
             return false
         }
 
-//        // attach listeners
-//        var size = sizeof(UnsafePointer<Void>)
-//        theErr = SRSetProperty(recognizer, OSType(kSRCallBackParam), &callbackParam, size)
-//        if OSStatus(theErr) != noErr {
-//            stop()
-//            return false
-//        }
+        // attach listeners
+        AEInstallEventHandler(AEEventClass(kAESpeechSuite), AEEventID(kAESpeechDone),
+            appleEventCallback!, nil, Boolean(0))
 
         var modes = kSRHasFeedbackHasListenModes
         
@@ -268,6 +197,9 @@ public class SpeechRecognizer {
     }
     
     public func stop() {
+        
+        AERemoveEventHandler(AEEventClass(kAESpeechSuite), AEEventID(kAESpeechDone),
+            appleEventCallback!, Boolean(0))
         
         if (started) {
             SRStopListening(recognizer)
