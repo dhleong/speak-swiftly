@@ -23,7 +23,7 @@ public protocol SpeechGrammarObject {
 
 public class SGBaseObject {
     
-    internal init() {}
+    private init() {}
     
     /// Wrap this Object so that it's "Optional"
     public func optionally() -> SGOptional {
