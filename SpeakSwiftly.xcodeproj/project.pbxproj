@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		B609A0691AFC735900F6BF12 /* SpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B609A0681AFC735900F6BF12 /* SpeechRecognizer.swift */; };
 		B609A06B1AFCF5EC00F6BF12 /* SpeechGrammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B609A06A1AFCF5EC00F6BF12 /* SpeechGrammar.swift */; };
+		B60D53D91B00F1BC00186667 /* SRExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60D53D81B00F1BC00186667 /* SRExtensions.swift */; };
 		B6A64B361AFC6B24000FAA82 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6A64B351AFC6B24000FAA82 /* main.swift */; };
 /* End PBXBuildFile section */
 
@@ -27,6 +28,7 @@
 /* Begin PBXFileReference section */
 		B609A0681AFC735900F6BF12 /* SpeechRecognizer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SpeechRecognizer.swift; sourceTree = "<group>"; };
 		B609A06A1AFCF5EC00F6BF12 /* SpeechGrammar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SpeechGrammar.swift; sourceTree = "<group>"; };
+		B60D53D81B00F1BC00186667 /* SRExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SRExtensions.swift; sourceTree = "<group>"; };
 		B6A64B321AFC6B24000FAA82 /* SpeakSwiftly */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SpeakSwiftly; sourceTree = BUILT_PRODUCTS_DIR; };
 		B6A64B351AFC6B24000FAA82 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		B6D7F6571AFFAAEF003848B0 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
@@ -70,8 +72,8 @@
 				B6A64B351AFC6B24000FAA82 /* main.swift */,
 				B609A0681AFC735900F6BF12 /* SpeechRecognizer.swift */,
 				B609A06A1AFCF5EC00F6BF12 /* SpeechGrammar.swift */,
+				B60D53D81B00F1BC00186667 /* SRExtensions.swift */,
 			);
-			name = SpeakSwiftly;
 			path = SpeakSwiftly;
 			sourceTree = "<group>";
 		};
@@ -133,6 +135,7 @@
 			files = (
 				B6A64B361AFC6B24000FAA82 /* main.swift in Sources */,
 				B609A0691AFC735900F6BF12 /* SpeechRecognizer.swift in Sources */,
+				B60D53D91B00F1BC00186667 /* SRExtensions.swift in Sources */,
 				B609A06B1AFCF5EC00F6BF12 /* SpeechGrammar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

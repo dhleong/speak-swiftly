@@ -11,12 +11,42 @@ import Foundation
 
 let MAX_RECOGNITION_LENGTH = 255
 
-public protocol SpeechRecognizerDelegate {
-    func onRecognition()
+public protocol SpeechTextRecognizerDelegate {
+    func onRecognition(text: String)
+}
+public protocol SpeechMeaningRecognizerDelegate {
+    func onRecognition(meanings: [String:AnyObject])
+}
+
+/// Convenience
+public class SpeechTextAdapter: SpeechTextRecognizerDelegate {
+    var closure: (String) -> ()
+    
+    init(with closure: (String) -> ()) {
+        self.closure = closure
+    }
+    
+    public func onRecognition(text: String) {
+        closure(text)
+    }
+}
+
+/// Convenience
+public class SpeechMeaningAdapter: SpeechMeaningRecognizerDelegate {
+    var closure: ([String:AnyObject]) -> ()
+    
+    init(with closure: ([String:AnyObject]) -> ()) {
+        self.closure = closure
+    }
+    
+    public func onRecognition(meanings: [String : AnyObject]) {
+        closure(meanings)
+    }
 }
 
 public class SpeechRecognizer {
-    public var delegate: SpeechRecognizerDelegate?
+    public var textDelegate: SpeechTextRecognizerDelegate?
+    public var meaningDelegate: SpeechMeaningRecognizerDelegate?
     
     // obj-c / swift callback bridging
     var bridgeBlock: COpaquePointer?
@@ -63,8 +93,14 @@ public class SpeechRecognizer {
                 return theErr
             }
 
-            self.handleResult2(speechResult)
-            SRReleaseObject(speechResult)
+            if let textDelegate = self.textDelegate {
+                self.processResultText(speechResult, delegate: textDelegate)
+            }
+            if let meaningDelegate = self.meaningDelegate {
+                self.handleResult(speechResult, delegate: meaningDelegate)
+            }
+            
+            speechResult.release()
             return OSErr(0)
         }
         
@@ -76,66 +112,56 @@ public class SpeechRecognizer {
         imp_removeBlock(bridgeBlock!)
     }
     
-    func handleResult(result: SRRecognitionResult) {
-        println("result = \(result)")
+    func handleResult(result: SRRecognitionResult, delegate: SpeechMeaningRecognizerDelegate) {
         var modelPtr = UnsafeMutablePointer<SRLanguageModel>.alloc(1)
         var size: Int = sizeof(UnsafePointer<SRLanguageModel>)
-        var theErr = SRGetProperty(result, OSType(kSRLanguageModelFormat), modelPtr, &size)
+        var theErr = result.getProperty(kSRLanguageModelFormat, result: modelPtr, resultSize: &size)
         if OSStatus(theErr) != noErr {
             println("GetLang ERROR = \(theErr)")
             return
         }
         
         var model = modelPtr.memory
-        processResult(model)
+        processResultModel(model, delegate: delegate)
         
-        SRReleaseObject(model)
+        model.release()
         modelPtr.destroy()
     }
 
-    func processResult(model: SRLanguageModel) {
-//        
-//        var itemsCount = -1;
-//        var theErr = SRCountItems(model, &itemsCount)
-//        if OSStatus(theErr) != noErr {
-//            println("err: \(theErr)")
-//            return;
-//        }
-//        if (itemsCount <= 0) {
-//            println("No items in the result model \(itemsCount)")
-//            return;
-//        } else {
-//            println("FOUND \(itemsCount) items!")
-//        }
-
-////        var object: SRLanguageObject = SRLanguageObject()
-//        var objectPtr = UnsafeMutablePointer<SRLanguageObject>.alloc(1)
-//        SRGetIndexedItem(model, objectPtr, 0)
-//        var object = objectPtr.memory
-        
-        var refCon = 0
-        var size = sizeof(Int)
-        var type = OSType(kSRRefCon)
-        
-        println("model=\(model); type=\(type)")
-        SRGetProperty(model, type, &refCon, &size)
-        
-        println("model=\(model); ref=\(refCon)")
-        
-//        objectPtr.destroy()
+    func processResultModel(model: SRSpeechObject, delegate: SpeechMeaningRecognizerDelegate) {
+        dive(model, delegate: delegate, depth: 0)
     }
-
-    func handleResult2(result: SRRecognitionResult) {
     
-        var resultStr = [CChar](count: MAX_RECOGNITION_LENGTH, repeatedValue: 0)
-        resultStr.withUnsafeMutableBufferPointer { (inout buffer: UnsafeMutableBufferPointer<CChar>) -> () in
-                
-            var resultStrLen = MAX_RECOGNITION_LENGTH
-            SRGetProperty(result, OSType(kSRTEXTFormat), buffer.baseAddress, &resultStrLen)
+    func dive(model: SRSpeechObject, delegate: SpeechMeaningRecognizerDelegate, depth: Int) {
+        var itemsCount = model.getCount()
+        if (itemsCount <= 0) {
+            println("No items in the result model \(itemsCount)")
+            return;
+        } else {
+            println("FOUND \(itemsCount) items!")
+        }
+
+        var refCon: Int = model.getRef()
+        println("model=\(model); .size=\(itemsCount); ref=\(refCon)")
+        
+        for i in 0..<itemsCount {
+            var object = model.getItem(i)
+            var refCon: Int = object.getRef()
+            var str = object.getText()
+            println("\(depth)..[\(i)] = \(refCon) (\(str))")
+            dive(object, delegate: delegate, depth: (depth + 1))
+            
+            object.release()
         }
         
-        var result = String.fromCString(resultStr)
-        println("Done! \(result)")
+    }
+
+    func processResultText(result: SRRecognitionResult, delegate: SpeechTextRecognizerDelegate) {
+    
+        if let string = result.getText() {
+            delegate.onRecognition(string)
+        }
+        
     }
     
     public func setGrammar(grammar: SpeechGrammarObject) -> Bool {
@@ -204,7 +230,7 @@ public class SpeechRecognizer {
             SRStopListening(recognizer)
         }
         
-        SRReleaseObject(recognizer)
+        recognizer.release()
         SRCloseRecognitionSystem(system)
         
         if let grammar = self.grammar {

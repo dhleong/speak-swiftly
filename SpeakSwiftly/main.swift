@@ -8,14 +8,19 @@
 
 import Foundation
 
-var recognizer = SpeechRecognizer()
-
 var nato = SGChoice(pickFromStrings: ["alpha", "bravo", "charlie"])
 var number = SGChoice(pickFromStrings: ["one", "two", "three"])
+
+func foo(item: SGRepeat) -> AnyObject {
+    return 42
+}
 
 var name = nato.repeated(atMost: 3)
 var grammar = name.then(number.optionally())
 
+var recognizer = SpeechRecognizer()
+recognizer.textDelegate = SpeechTextAdapter(with: { println("Text: `\($0)`") })
+recognizer.meaningDelegate = SpeechMeaningAdapter(with: { println("Meanings: \($0)") })
 recognizer.setGrammar(grammar)
 println("Starting...")
 if recognizer.start() {

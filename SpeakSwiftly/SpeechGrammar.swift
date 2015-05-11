@@ -9,12 +9,13 @@
 import Carbon
 import Foundation
 
-
 public protocol SpeechGrammarObject {
     
     func release();
     
     func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject;
+    
+    func asValue() -> AnyObject?
     
     /// The "length" of this object, typically in number of words
     ///  along a single path. Mostly for internal use
@@ -23,7 +24,22 @@ public protocol SpeechGrammarObject {
 
 public class SGBaseObject {
     
+    var valueBlock: ((Any) -> AnyObject)?
+    
     private init() {}
+    
+    public func asValue() -> AnyObject? {
+        if let block = valueBlock {
+            return block(self as! SpeechGrammarObject)
+        }
+        
+        return nil
+    }
+    
+    public func withValue<T: SpeechGrammarObject>(block: (T) -> AnyObject) -> T {
+        valueBlock = block as? (Any) -> AnyObject
+        return self as! T
+    }
     
     /// Wrap this Object so that it's "Optional"
     public func optionally() -> SGOptional {
@@ -44,31 +60,55 @@ public class SGBaseObject {
     public func then(next: SpeechGrammarObject) -> SGPath {
         return SGPath(path: [self as! SpeechGrammarObject, next])
     }
+    
+    private func setSelfRef(languageObj: SRLanguageObject) {
+        var ptr = UnsafeMutablePointer<SpeechGrammarObject>.alloc(1)
+        ptr.memory = self as! SpeechGrammarObject
+        SRSetProperty(languageObj, OSType(kSRRefCon), ptr, sizeof(UnsafePointer<SpeechGrammarObject>))
+        languageObj.setProperty(kSRRefCon, value: ptr)
+    }
 }
 
 public class SGWord: SGBaseObject, SpeechGrammarObject {
-    static var id: Int = 0
+    static var id: Int = 1
     
     // TODO support user-provided refcon...?
     let myId: Int = id++
     let word: String
-    var wordObj: SRWord? = SRWord()
+    var wordObj: SRWord? = nil
     
     init(from word: String) {
         self.word = word
     }
     
+    public override func asValue() -> AnyObject? {
+        
+        if let providedValue: AnyObject = super.asValue() {
+            return providedValue
+        }
+       
+        return word
+    }
+    
     public func release() {
         if let obj = wordObj {
-            SRReleaseObject(obj)
+            obj.release()
         }
     }
     
     public func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
+        if let wordObj = self.wordObj {
+            return wordObj
+        }
+        
         var myId = self.myId
-        SRNewWord(system, &wordObj!, word, Int32(count(word)))
-        SRSetProperty(wordObj!, OSType(kSRRefCon), &myId, sizeof(Int))
-        return wordObj!
+
+        var obj = SRWord()
+        SRNewWord(system, &obj, word, Int32(count(word)))
+        
+        obj.setRef(&myId)
+        self.wordObj = obj
+        return obj
     }
     
     public func length() -> Int {
@@ -80,7 +120,7 @@ public class SGWord: SGBaseObject, SpeechGrammarObject {
 public class SGChoice: SGBaseObject, SpeechGrammarObject {
     
     var choices: [SpeechGrammarObject]
-    var model: SRLanguageModel? = SRLanguageModel()
+    var model: SRLanguageModel? = nil
     
     init(pickFromStrings words: [String]) {
         self.choices = words.map { SGWord(from: $0) }
@@ -96,7 +136,7 @@ public class SGChoice: SGBaseObject, SpeechGrammarObject {
     
     public func release() {
         if let model = self.model {
-            SRReleaseObject(model)
+            model.release()
         }
         
         for word in choices {
@@ -105,23 +145,28 @@ public class SGChoice: SGBaseObject, SpeechGrammarObject {
     }
     
     public func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
-        SRNewLanguageModel(system, &model!, "Choice", 6)
         
         if let model = self.model {
-            var number = 42; // NB bogus values for testing purposes...
-            SRSetProperty(model, OSType(kSRRefCon), &number, sizeof(Int))
-            
-            // sort the objects before adding---order is important!
-            //  longer phrases MUST be before shorter ones for the
-            //  system to recognize them
-            choices.sort() { $0.length() > $1.length() }
-            
-            for word in choices {
-                SRAddLanguageObject(model, word.asLanguageObject(system))
-            }
+            return model
         }
         
-        return model!
+        var newModel = SRLanguageModel()
+        SRNewLanguageModel(system, &newModel, "Choice", 6)
+
+        var number = 42; // NB bogus values for testing purposes...
+        newModel.setRef(&number)
+        
+        // sort the objects before adding---order is important!
+        //  longer phrases MUST be before shorter ones for the
+        //  system to recognize them
+        choices.sort() { $0.length() > $1.length() }
+        
+        for word in choices {
+            SRAddLanguageObject(newModel, word.asLanguageObject(system))
+        }
+        
+        self.model = newModel
+        return newModel
     }
     
     public func length() -> Int {
@@ -136,7 +181,7 @@ public class SGChoice: SGBaseObject, SpeechGrammarObject {
 public class SGPath: SGBaseObject, SpeechGrammarObject {
     
     var objs: [SpeechGrammarObject]
-    var path: SRPath? = SRPath()
+    var path: SRPath? = nil
     
     init(path objs: [SpeechGrammarObject]) {
         self.objs = objs
@@ -151,7 +196,7 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
     
     public func release() {
         if let obj = self.path {
-            SRReleaseObject(obj)
+            obj.release()
         }
         
         for obj in objs {
@@ -160,15 +205,21 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
     }
 
     public func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
-        SRNewPath(system, &path!)
-        
         if let path = self.path {
-            for obj in objs {
-                SRAddLanguageObject(path, obj.asLanguageObject(system))
-            }
+            return path
+        }
+        
+        var newPath = SRPath()
+        SRNewPath(system, &newPath)
+        var bogus = 999
+        newPath.setRef(&bogus)
+        
+        for obj in objs {
+            SRAddLanguageObject(newPath, obj.asLanguageObject(system))
         }
 
-        return path!
+        self.path = newPath
+        return newPath
     }
 
     public func length() -> Int {
