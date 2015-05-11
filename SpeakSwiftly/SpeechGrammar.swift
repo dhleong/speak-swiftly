@@ -21,7 +21,32 @@ public protocol SpeechGrammarObject {
     func length() -> Int
 }
 
-public class SGWord: SpeechGrammarObject {
+public class SGBaseObject {
+    
+    internal init() {}
+    
+    /// Wrap this Object so that it's "Optional"
+    public func optionally() -> SGOptional {
+        return SGOptional(with: self as! SpeechGrammarObject)
+    }
+    
+    /// Wrap this Object in a Repeat for the provided range
+    public func repeated(atLeast: Int = 1, atMost: Int) -> SGRepeat {
+        return SGRepeat(repeat: self as! SpeechGrammarObject, atLeast: atLeast, atMost: atMost)
+    }
+    
+    /// Wrap this Object in a Repeat for exactly the number of times provided
+    public func repeated(exactly times: Int) -> SGRepeat {
+        return SGRepeat(repeat: self as! SpeechGrammarObject, atLeast: times, atMost: times)
+    }
+    
+    /// Create a Path starting with `self` then proceeding to `next`
+    public func then(next: SpeechGrammarObject) -> SGPath {
+        return SGPath(path: [self as! SpeechGrammarObject, next])
+    }
+}
+
+public class SGWord: SGBaseObject, SpeechGrammarObject {
     static var id: Int = 0
     
     // TODO support user-provided refcon...?
@@ -52,7 +77,7 @@ public class SGWord: SpeechGrammarObject {
 }
 
 /// Choose between provided Grammar Objects
-public class SGChoice: SpeechGrammarObject {
+public class SGChoice: SGBaseObject, SpeechGrammarObject {
     
     var choices: [SpeechGrammarObject]
     var model: SRLanguageModel? = SRLanguageModel()
@@ -108,13 +133,20 @@ public class SGChoice: SpeechGrammarObject {
 }
 
 /// A sequence of Grammar Objects
-public class SGPath: SpeechGrammarObject {
+public class SGPath: SGBaseObject, SpeechGrammarObject {
     
     var objs: [SpeechGrammarObject]
     var path: SRPath? = SRPath()
     
     init(path objs: [SpeechGrammarObject]) {
         self.objs = objs
+    }
+    
+    /// When already a Path, this simply appends and returns itself.
+    ///  This lets you do things like `word.then(anotherWord).then(lastWord)`
+    override public func then(next: SpeechGrammarObject) -> SGPath {
+        objs.append(next)
+        return self
     }
     
     public func release() {
@@ -145,7 +177,7 @@ public class SGPath: SpeechGrammarObject {
 }
 
 /// Repeat the given object some number of times
-public class SGRepeat: SpeechGrammarObject {
+public class SGRepeat: SGBaseObject, SpeechGrammarObject {
     
     let delegate: SGChoice
     

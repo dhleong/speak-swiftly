@@ -13,8 +13,8 @@ var recognizer = SpeechRecognizer()
 var nato = SGChoice(pickFromStrings: ["alpha", "bravo", "charlie"])
 var number = SGChoice(pickFromStrings: ["one", "two", "three"])
 
-var name = SGRepeat(repeat: nato, atMost: 3)
-var grammar = SGPath(path: [name, SGOptional(with: number)])
+var name = nato.repeated(atMost: 3)
+var grammar = name.then(number.optionally())
 
 recognizer.setGrammar(grammar)
 println("Starting...")
