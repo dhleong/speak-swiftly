@@ -17,7 +17,6 @@ extension SRLanguageObject {
         var size = sizeof(UnsafeMutablePointer<T>)
         getProperty(kSRRefCon, result: ptr, resultSize: &size)
         var result = ptr.memory
-        println("memory=\(result); size=\(size)")
         ptr.dealloc(1)
         return result
     }

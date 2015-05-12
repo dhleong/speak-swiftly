@@ -52,9 +52,11 @@ public class SpeechRecognizer {
     var bridgeBlock: COpaquePointer?
     var appleEventCallback: AEEventHandlerUPP?
     
-    var system: SRRecognitionSystem = SRRecognitionSystem();
-    var recognizer: SRRecognizer = SRRecognizer();
-    var grammar: SpeechGrammarObject?;
+    var system: SRRecognitionSystem = SRRecognitionSystem()
+    var recognizer: SRRecognizer = SRRecognizer()
+    var grammar: SpeechGrammarObject?
+    
+    var grammarObjects = [Int:SpeechGrammarObject]()
 
     var started = false
     
@@ -129,36 +131,31 @@ public class SpeechRecognizer {
     }
 
     func processResultModel(model: SRSpeechObject, delegate: SpeechMeaningRecognizerDelegate) {
-//        dive(model, delegate: delegate, depth: 0)
-        var grammarRoot: Int = model.getRef()
-        
-        // TODO construct a shadow tree from the returned Object
-        //  that follows the grammar's structure
-
-        
-        println("GrammarRoot=\(grammarRoot)")
+        if let grammarRoot = getObject(model) {
+            // construct a shadow tree from the returned Object
+            //  that follows the grammar's structure
+            var shadow = grammarRoot.cloneWithContents(model)
+            
+            dive(shadow, delegate: delegate, depth: 0)
+        } else {
+            
+            println("Unable to find root for \(model)")
+        }
     }
     
-    func dive(model: SRSpeechObject, delegate: SpeechMeaningRecognizerDelegate, depth: Int) {
-        var itemsCount = model.getCount()
-        if (itemsCount <= 0) {
-            println("No items in the result model \(itemsCount)")
-            return;
-        } else {
-            println("FOUND \(itemsCount) items!")
+    func dive(obj: SpeechGrammarObject, delegate: SpeechMeaningRecognizerDelegate, depth: Int) {
+        var kids = obj.getChildren()
+        var tag = obj.getTag()
+        
+        if let tag = tag {
+            println("Value for \(tag) = \(obj.asValue())")
+            return
         }
 
-        var refCon: Int = model.getRef()
-        println("model=\(model); .size=\(itemsCount); ref=\(refCon)")
-        
-        for i in 0..<itemsCount {
-            var object = model.getItem(i)
-            var refCon: Int = object.getRef()
-            var str = object.getText()
-            println("\(depth)..[\(i)] = \(refCon) (\(str))")
-            dive(object, delegate: delegate, depth: (depth + 1))
-            
-            object.release()
+        if let kids = kids {
+            for kid in kids {
+                dive(kid, delegate: delegate, depth: (depth + 1))
+            }
         }
         
     }
@@ -177,6 +174,24 @@ public class SpeechRecognizer {
         }
         
         self.grammar = grammar
+        grammarObjects.removeAll()
+        
+        // NB: We may actually not need this; probably,
+        //  the cloneWithContents can just be run on the
+        //  grammarRoot....
+        // index the objects in the grammar
+        var workspace = [SpeechGrammarObject]()
+        workspace.append(grammar)
+        
+        while !workspace.isEmpty {
+            var current = workspace.removeLast()
+            grammarObjects[current.myId] = current
+            
+            if let kids = current.getChildren() {
+                workspace.extend(kids)
+            }
+        }
+        
         return true
     }
 
@@ -247,4 +262,8 @@ public class SpeechRecognizer {
         started = false;
     }
 
+    private func getObject(srObj: SRLanguageObject) -> SpeechGrammarObject? {
+        var id: Int = srObj.getRef()
+        return grammarObjects[id]
+    }
 }

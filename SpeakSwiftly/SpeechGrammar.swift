@@ -18,20 +18,30 @@ public protocol SpeechGrammarObject {
     
     func asValue() -> Any?
     
+    /// Make a shallow clone of this object whose contents
+    ///  match those of the provided obj
+    func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject
+    
+    /// Returns "self" again for convenience
+    func setValue(block: (SpeechGrammarObject) -> AnyObject) -> SpeechGrammarObject
+    
     func getChildren() -> [SpeechGrammarObject]?
+    
+    func getTag() -> String?
     
     func release();
     
     /// The "length" of this object, typically in number of words
     ///  along a single path. Mostly for internal use
     func length() -> Int
+    
 }
 
 public class SGBaseObject {
     
     static var nextId: Int = 0
     
-    public var myId: Int
+    public let myId: Int
     
     var valueBlock: ((SpeechGrammarObject) -> AnyObject)?
     
@@ -51,8 +61,8 @@ public class SGBaseObject {
     //  I would have to make all the subclasses also be generic, which just
     //  doesn't make any sense at all. 
     //  Also, I never thought I'd miss Java's type erasure
-//    public func withValue<T: SpeechGrammarObject>(block: (SpeechGrammarObject) -> AnyObject) -> T {
-    public func withValue(block: (SpeechGrammarObject) -> AnyObject) -> SpeechGrammarObject {
+//    public func setValue<T: SpeechGrammarObject>(block: (SpeechGrammarObject) -> AnyObject) -> T {
+    public func setValue(block: (SpeechGrammarObject) -> AnyObject) -> SpeechGrammarObject {
         valueBlock = block
         return self as! SpeechGrammarObject
     }
@@ -77,8 +87,18 @@ public class SGBaseObject {
         return SGPath(path: [self as! SpeechGrammarObject, next])
     }
     
-    private func setSelfRef(languageObj: SRLanguageObject) {
-        languageObj.setRef(&myId)
+    public func getTag() -> String? {
+        return nil
+    }
+    
+    public func withTag(tag: String) -> SpeechGrammarObject {
+        return SGTagged(delegate: self as! SpeechGrammarObject, tag: tag)
+    }
+    
+    private func setSelfRef(languageObj: SRLanguageObject) -> SRLanguageObject {
+        var id = myId
+        languageObj.setRef(&id)
+        return languageObj
     }
 }
 
@@ -98,6 +118,10 @@ public class SGWord: SGBaseObject, SpeechGrammarObject {
         }
        
         return word
+    }
+    
+    public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
+        return self
     }
     
     public func getChildren() -> [SpeechGrammarObject]? {
@@ -155,6 +179,27 @@ public class SGChoice: SGBaseObject, SpeechGrammarObject {
     
     public func addChoice(item: SpeechGrammarObject) {
         choices.append(item)
+    }
+    
+    public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
+        
+        if obj.getCount() != 1 {
+            // the choice should have been made!
+            println("EXPECTED CHOICE SIZE 1 but was \(obj.getCount())!!")
+        }
+        
+        var chosen = obj.getItem(0)
+        var chosenId: Int = chosen.getRef()
+        for choice in choices {
+            if choice.myId == chosenId {
+                return choice.cloneWithContents(chosen)
+            }
+        }
+        
+        // shouldn't happen
+        var members = choices.map { $0.myId }
+        println("\(obj.getText()) CHOSE \(chosenId) but NOT a member! (\(members))")
+        return self
     }
     
     public func getChildren() -> [SpeechGrammarObject]? {
@@ -220,6 +265,20 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
        
         // There should only be one item when we get the value
         return objs.map { $0.asValue() }
+    }
+    
+    public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
+        
+        if obj.getCount() != objs.count {
+            println("Count mismatch!! \(obj.getCount()) != \(objs.count)")
+        }
+        
+        var shadowPath = [SpeechGrammarObject]()
+        for i in 0..<objs.count {
+            shadowPath.append(objs[i].cloneWithContents(obj.getItem(i)))
+        }
+        
+        return SGPath(path: shadowPath)
     }
     
     public func getChildren() -> [SpeechGrammarObject]? {
@@ -294,6 +353,10 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
         return delegate.asValue()
     }
     
+    public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
+        return delegate.cloneWithContents(obj)
+    }
+    
     public func getChildren() -> [SpeechGrammarObject]? {
         return delegate.getChildren()
     }
@@ -303,7 +366,7 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
     }
     
     public func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
-        return delegate.asLanguageObject(system)
+        return setSelfRef(delegate.asLanguageObject(system))
     }
     
     public func length() -> Int {
@@ -325,5 +388,55 @@ internal class SGEmpty: SGPath {
     
     private init() {
         super.init(path: [])
+    }
+}
+
+public class SGTagged: SpeechGrammarObject {
+    
+    public let myId: Int
+    
+    var delegate: SpeechGrammarObject
+    var tag: String
+    
+    private init(delegate: SpeechGrammarObject, tag: String) {
+        myId = delegate.myId
+        
+        self.delegate = delegate
+        self.tag = tag
+    }
+    
+    public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
+        return SGTagged(delegate: delegate.cloneWithContents(obj), tag: tag)
+    }
+    
+    public func getChildren() -> [SpeechGrammarObject]? {
+        return delegate.getChildren()
+    }
+    
+    public func getTag() -> String? {
+        return tag
+    }
+    
+    public func release() {
+        delegate.release()
+    }
+    
+    public func asValue() -> Any? {
+        return delegate.asValue()
+    }
+    
+    public func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
+        var obj = delegate.asLanguageObject(system)
+        var id = myId
+        obj.setRef(&id)
+        return obj
+    }
+    
+    public func length() -> Int {
+        return delegate.length()
+    }
+    
+    public func setValue(block: (SpeechGrammarObject) -> AnyObject) -> SpeechGrammarObject {
+        return delegate.setValue(block)
     }
 }

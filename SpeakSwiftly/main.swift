@@ -11,7 +11,7 @@ import Foundation
 var nato = SGChoice(pickFromStrings: ["alpha", "bravo", "charlie"])
 for choice in nato.choices {
     var word = (choice as! SGWord)
-    word.withValue({ _ in
+    word.setValue({ _ in
         word.word.substringToIndex(advance(word.word.startIndex, 1)).uppercaseString
     })
 }
@@ -19,11 +19,12 @@ for choice in nato.choices {
 var number = SGChoice(pickFromStrings: ["zero", "one", "two", "three"])
 for index in 0..<number.choices.count {
     var word = number.choices[index] as! SGWord
-    word.withValue({ _ in "\(index)" })
+    word.setValue({ _ in "\(index)" })
 }
 
-var name = nato.repeated(atMost: 3)
-var grammar = name.then(number.optionally())
+var letters = nato.repeated(atMost: 3)
+var name = letters.then(number.optionally()).withTag("name")
+var grammar = SGWord(from: "hello").then(name)
 
 var recognizer = SpeechRecognizer()
 recognizer.textDelegate = SpeechTextAdapter(with: { println("Text: `\($0)`") })
