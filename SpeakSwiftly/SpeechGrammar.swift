@@ -264,7 +264,10 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
         }
        
         // There should only be one item when we get the value
-        return objs.map { $0.asValue() }
+        var value = objs.map { $0.asValue() }
+                        .filter { $0 != nil } // remove nils
+                        .map { $0! } // the remaining are non-nil
+        return value.isEmpty ? nil : value
     }
     
     public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
@@ -388,6 +391,10 @@ internal class SGEmpty: SGPath {
     
     private init() {
         super.init(path: [])
+    }
+    
+    override func asValue() -> Any? {
+       return nil
     }
 }
 
