@@ -11,11 +11,16 @@ import Foundation
 
 public protocol SpeechGrammarObject {
     
-    func release();
+    /// A unique Int id for this object
+    var myId: Int { get }
     
     func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject;
     
-    func asValue() -> AnyObject?
+    func asValue() -> Any?
+    
+    func getChildren() -> [SpeechGrammarObject]?
+    
+    func release();
     
     /// The "length" of this object, typically in number of words
     ///  along a single path. Mostly for internal use
@@ -24,11 +29,17 @@ public protocol SpeechGrammarObject {
 
 public class SGBaseObject {
     
-    var valueBlock: ((Any) -> AnyObject)?
+    static var nextId: Int = 0
     
-    private init() {}
+    public var myId: Int
     
-    public func asValue() -> AnyObject? {
+    var valueBlock: ((SpeechGrammarObject) -> AnyObject)?
+    
+    private init() {
+        myId = SGBaseObject.nextId++
+    }
+    
+    public func asValue() -> Any? {
         if let block = valueBlock {
             return block(self as! SpeechGrammarObject)
         }
@@ -36,9 +47,14 @@ public class SGBaseObject {
         return nil
     }
     
-    public func withValue<T: SpeechGrammarObject>(block: (T) -> AnyObject) -> T {
-        valueBlock = block as? (Any) -> AnyObject
-        return self as! T
+    // would love for this to be properly generic, but Swift's generics SUCK.
+    //  I would have to make all the subclasses also be generic, which just
+    //  doesn't make any sense at all. 
+    //  Also, I never thought I'd miss Java's type erasure
+//    public func withValue<T: SpeechGrammarObject>(block: (SpeechGrammarObject) -> AnyObject) -> T {
+    public func withValue(block: (SpeechGrammarObject) -> AnyObject) -> SpeechGrammarObject {
+        valueBlock = block
+        return self as! SpeechGrammarObject
     }
     
     /// Wrap this Object so that it's "Optional"
@@ -62,18 +78,12 @@ public class SGBaseObject {
     }
     
     private func setSelfRef(languageObj: SRLanguageObject) {
-        var ptr = UnsafeMutablePointer<SpeechGrammarObject>.alloc(1)
-        ptr.memory = self as! SpeechGrammarObject
-        SRSetProperty(languageObj, OSType(kSRRefCon), ptr, sizeof(UnsafePointer<SpeechGrammarObject>))
-        languageObj.setProperty(kSRRefCon, value: ptr)
+        languageObj.setRef(&myId)
     }
 }
 
 public class SGWord: SGBaseObject, SpeechGrammarObject {
-    static var id: Int = 1
-    
-    // TODO support user-provided refcon...?
-    let myId: Int = id++
+
     let word: String
     var wordObj: SRWord? = nil
     
@@ -81,13 +91,17 @@ public class SGWord: SGBaseObject, SpeechGrammarObject {
         self.word = word
     }
     
-    public override func asValue() -> AnyObject? {
+    public override func asValue() -> Any? {
         
-        if let providedValue: AnyObject = super.asValue() {
+        if let providedValue = super.asValue() {
             return providedValue
         }
        
         return word
+    }
+    
+    public func getChildren() -> [SpeechGrammarObject]? {
+        return nil
     }
     
     public func release() {
@@ -105,8 +119,7 @@ public class SGWord: SGBaseObject, SpeechGrammarObject {
 
         var obj = SRWord()
         SRNewWord(system, &obj, word, Int32(count(word)))
-        
-        obj.setRef(&myId)
+        setSelfRef(obj)
         self.wordObj = obj
         return obj
     }
@@ -130,8 +143,22 @@ public class SGChoice: SGBaseObject, SpeechGrammarObject {
         self.choices = words
     }
     
+    public override func asValue() -> Any? {
+        
+        if let providedValue = super.asValue() {
+            return providedValue
+        }
+       
+        // There should only be one item when we get the value
+        return choices[0].asValue()
+    }
+    
     public func addChoice(item: SpeechGrammarObject) {
         choices.append(item)
+    }
+    
+    public func getChildren() -> [SpeechGrammarObject]? {
+        return choices
     }
     
     public func release() {
@@ -152,9 +179,7 @@ public class SGChoice: SGBaseObject, SpeechGrammarObject {
         
         var newModel = SRLanguageModel()
         SRNewLanguageModel(system, &newModel, "Choice", 6)
-
-        var number = 42; // NB bogus values for testing purposes...
-        newModel.setRef(&number)
+        setSelfRef(newModel)
         
         // sort the objects before adding---order is important!
         //  longer phrases MUST be before shorter ones for the
@@ -187,6 +212,20 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
         self.objs = objs
     }
     
+    public override func asValue() -> Any? {
+        
+        if let providedValue = super.asValue() {
+            return providedValue
+        }
+       
+        // There should only be one item when we get the value
+        return objs.map { $0.asValue() }
+    }
+    
+    public func getChildren() -> [SpeechGrammarObject]? {
+        return objs
+    }
+    
     /// When already a Path, this simply appends and returns itself.
     ///  This lets you do things like `word.then(anotherWord).then(lastWord)`
     override public func then(next: SpeechGrammarObject) -> SGPath {
@@ -211,8 +250,7 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
         
         var newPath = SRPath()
         SRNewPath(system, &newPath)
-        var bogus = 999
-        newPath.setRef(&bogus)
+        setSelfRef(newPath)
         
         for obj in objs {
             SRAddLanguageObject(newPath, obj.asLanguageObject(system))
@@ -237,7 +275,7 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
 
         var min = rawMin
         if min == 0 {
-            delegate.addChoice(SGEmpty())
+            delegate.addChoice(SGEmpty.INSTANCE)
             min++
         }
         
@@ -245,6 +283,19 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
             var repeated = SGPath(path: [SpeechGrammarObject](count: i, repeatedValue: repeat))
             delegate.addChoice(repeated)
         }
+    }
+    
+    public override func asValue() -> Any? {
+        
+        if let providedValue = super.asValue() {
+            return providedValue
+        }
+        
+        return delegate.asValue()
+    }
+    
+    public func getChildren() -> [SpeechGrammarObject]? {
+        return delegate.getChildren()
     }
     
     public func release() {
@@ -269,7 +320,10 @@ public class SGOptional: SGRepeat {
 
 /// Value for SGChoice to represent a null choice
 internal class SGEmpty: SGPath {
-    init() {
+    
+    static let INSTANCE = SGEmpty()
+    
+    private init() {
         super.init(path: [])
     }
 }

@@ -9,10 +9,17 @@
 import Foundation
 
 var nato = SGChoice(pickFromStrings: ["alpha", "bravo", "charlie"])
-var number = SGChoice(pickFromStrings: ["one", "two", "three"])
+for choice in nato.choices {
+    var word = (choice as! SGWord)
+    word.withValue({ _ in
+        word.word.substringToIndex(advance(word.word.startIndex, 1)).uppercaseString
+    })
+}
 
-func foo(item: SGRepeat) -> AnyObject {
-    return 42
+var number = SGChoice(pickFromStrings: ["zero", "one", "two", "three"])
+for index in 0..<number.choices.count {
+    var word = number.choices[index] as! SGWord
+    word.withValue({ _ in "\(index)" })
 }
 
 var name = nato.repeated(atMost: 3)

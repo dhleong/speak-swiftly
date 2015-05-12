@@ -129,7 +129,14 @@ public class SpeechRecognizer {
     }
 
     func processResultModel(model: SRSpeechObject, delegate: SpeechMeaningRecognizerDelegate) {
-        dive(model, delegate: delegate, depth: 0)
+//        dive(model, delegate: delegate, depth: 0)
+        var grammarRoot: Int = model.getRef()
+        
+        // TODO construct a shadow tree from the returned Object
+        //  that follows the grammar's structure
+
+        
+        println("GrammarRoot=\(grammarRoot)")
     }
     
     func dive(model: SRSpeechObject, delegate: SpeechMeaningRecognizerDelegate, depth: Int) {
