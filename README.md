@@ -40,8 +40,8 @@ number.setValue(joinAsString)
 //  EG: N241AB, BAW2451
 //  The airline may be omitted if unambiguous after initial contact
 var numbers = number.repeated(atLeast: 3, atMost: 4).setValue(flatJoinAsString)
-var letters = nato.repeated(atLeast: 0, atMost: 2).setValue(flatJoinAsString)
-var name = airline.optionally().then(numbers).then(letters)
+var letters = nato.repeated(exactly: 2).setValue(flatJoinAsString)
+var name = airline.optionally().then(numbers).then(letters.optionally())
             .withTag("name") // we'll be able to extract the name using this tag
             .setValue(flatJoinAsString)
 

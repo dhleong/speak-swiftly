@@ -37,6 +37,7 @@ public protocol SpeechGrammarObject {
     
     func withTag(tag: String) -> SpeechGrammarObject
     
+    func optionally() -> SGOptional
     
     func then(next: SpeechGrammarObject) -> SGPath
 }
@@ -105,6 +106,77 @@ public class SGBaseObject {
         return languageObj
     }
 }
+
+// Has to be public because Swift is dumb
+public class _SGDelegate: SpeechGrammarObject {
+    
+    public let myId: Int
+    
+    let delegate: SpeechGrammarObject
+    var valueBlock: ((SpeechGrammarObject) -> AnyObject)?
+    
+    private init(delegate: SpeechGrammarObject) {
+        myId = delegate.myId
+        
+        self.delegate = delegate
+    }
+    
+    // NB: This should be overridden. I would love for this to be
+    //   an abstract method, but Swift doesn't support them :/
+    public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
+        return delegate.cloneWithContents(obj)
+    }
+    
+    public func getChildren() -> [SpeechGrammarObject]? {
+        return delegate.getChildren()
+    }
+    
+    public func getTag() -> String? {
+        return nil
+    }
+    
+    public func release() {
+        delegate.release()
+    }
+    
+    public func asValue() -> Any? {
+        
+        if let block = valueBlock {
+            return block(delegate)
+        }
+        
+        return delegate.asValue()
+    }
+    
+    public func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
+        var obj = delegate.asLanguageObject(system)
+        var id = myId
+        obj.setRef(&id)
+        return obj
+    }
+    
+    public func length() -> Int {
+        return delegate.length()
+    }
+    
+    public func setValue(block: (SpeechGrammarObject) -> AnyObject) -> SpeechGrammarObject {
+        valueBlock = block
+        return self
+    }
+    
+    public func withTag(tag: String) -> SpeechGrammarObject {
+        return SGTagged(delegate: self, tag: tag)
+    }
+    
+    public func optionally() -> SGOptional {
+        return SGOptional(with: self)
+    }
+    
+    public func then(next: SpeechGrammarObject) -> SGPath {
+        return SGPath(path: [self, next])
+    }
+}
+
 
 public class SGWord: SGBaseObject, SpeechGrammarObject {
 
@@ -423,12 +495,41 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
 }
 
 /// Convenience for an object that may or may not be present
-// TODO There's actually an "optional" flag we can set!
 public class SGOptional: SGRepeat {
     init(with obj: SpeechGrammarObject) {
         super.init(repeat: obj, atLeast: 0, atMost: 1)
     }
+    
+    public override func asValue() -> Any? {
+        var value = super.asValue()
+        if value is [Any] {
+            // it should be
+            return (value as! [Any]).first
+        }
+        
+        return value
+    }
 }
+
+// NB: This doesn't seem to work for some reason...
+//public class SGOptional: _SGDelegate {
+//    init(with obj: SpeechGrammarObject) {
+//        super.init(delegate: obj)
+//    }
+//    
+//    public override func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
+//        var clone = SGOptional(with: delegate.cloneWithContents(obj))
+//        clone.valueBlock = valueBlock
+//        return clone
+//    }
+//    
+//    public override func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
+//        var obj = super.asLanguageObject(system)
+//        var isOptional = Boolean(1)
+//        obj.setProperty(kSROptional, value: &isOptional)
+//        return obj
+//    }
+//}
 
 /// Value for SGChoice to represent a null choice
 internal class SGEmpty: SGPath {
@@ -444,70 +545,28 @@ internal class SGEmpty: SGPath {
     }
 }
 
-public class SGTagged: SpeechGrammarObject {
+public class SGTagged: _SGDelegate {
     
-    public let myId: Int
-    
-    var delegate: SpeechGrammarObject
-    var valueBlock: ((SpeechGrammarObject) -> AnyObject)?
     var tag: String
     
     private init(delegate: SpeechGrammarObject, tag: String) {
-        myId = delegate.myId
-        
-        self.delegate = delegate
         self.tag = tag
+        
+        super.init(delegate: delegate)
     }
     
-    public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
+    public override func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
         var clone = SGTagged(delegate: delegate.cloneWithContents(obj), tag: tag)
         clone.valueBlock = valueBlock
         return clone
     }
     
-    public func getChildren() -> [SpeechGrammarObject]? {
-        return delegate.getChildren()
-    }
-    
-    public func getTag() -> String? {
+    public override func getTag() -> String? {
         return tag
     }
     
-    public func release() {
-        delegate.release()
-    }
-    
-    public func asValue() -> Any? {
-        
-        if let block = valueBlock {
-            return block(delegate)
-        }
-        
-        return delegate.asValue()
-    }
-    
-    public func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
-        var obj = delegate.asLanguageObject(system)
-        var id = myId
-        obj.setRef(&id)
-        return obj
-    }
-    
-    public func length() -> Int {
-        return delegate.length()
-    }
-    
-    public func setValue(block: (SpeechGrammarObject) -> AnyObject) -> SpeechGrammarObject {
-        valueBlock = block
-        return self
-    }
-    
-    public func withTag(tag: String) -> SpeechGrammarObject {
+    public override func withTag(tag: String) -> SpeechGrammarObject {
         self.tag = tag
         return self
-    }
-    
-    public func then(next: SpeechGrammarObject) -> SGPath {
-        return SGPath(path: [self, next])
     }
 }

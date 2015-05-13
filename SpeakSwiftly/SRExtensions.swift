@@ -50,7 +50,11 @@ extension SRLanguageObject {
     }
     
     func setProperty(propertyTag: Int, value ptr: UnsafePointer<Void>) -> OSErr {
-        return SRSetProperty(self, OSType(propertyTag), ptr, sizeof(UnsafePointer<Void>))
+        var result = SRSetProperty(self, OSType(propertyTag), ptr, sizeof(UnsafePointer<Void>))
+        if OSStatus(result) != noErr {
+            println("WARN: Error setting property \(propertyTag) on \(self): \(result)")
+        }
+        return result
     }
 }
 
