@@ -35,6 +35,10 @@ public protocol SpeechGrammarObject {
     ///  along a single path. Mostly for internal use
     func length() -> Int
     
+    func withTag(tag: String) -> SpeechGrammarObject
+    
+    
+    func then(next: SpeechGrammarObject) -> SGPath
 }
 
 public class SGBaseObject {
@@ -192,7 +196,9 @@ public class SGChoice: SGBaseObject, SpeechGrammarObject {
         var chosenId: Int = chosen.getRef()
         for choice in choices {
             if choice.myId == chosenId {
-                return choice.cloneWithContents(chosen)
+                var clone = SGChoice(pickFrom: [choice.cloneWithContents(chosen)])
+                clone.valueBlock = valueBlock
+                return clone
             }
         }
         
@@ -281,7 +287,9 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
             shadowPath.append(objs[i].cloneWithContents(obj.getItem(i)))
         }
         
-        return SGPath(path: shadowPath)
+        var clone = SGPath(path: shadowPath)
+        clone.valueBlock = valueBlock
+        return clone
     }
     
     public func getChildren() -> [SpeechGrammarObject]? {
@@ -347,6 +355,10 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
         }
     }
     
+    private init(clone: SGRepeat, with obj: SRLanguageObject) {
+        delegate = clone.delegate.cloneWithContents(obj) as! SGChoice
+    }
+    
     public override func asValue() -> Any? {
         
         if let providedValue = super.asValue() {
@@ -357,7 +369,10 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
     }
     
     public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
-        return delegate.cloneWithContents(obj)
+        // NB: I have NO idea why it won't let me set valueBlock in the constructor...
+        var clone = SGRepeat(clone: self, with: obj)
+        clone.valueBlock = valueBlock
+        return clone
     }
     
     public func getChildren() -> [SpeechGrammarObject]? {
@@ -403,6 +418,7 @@ public class SGTagged: SpeechGrammarObject {
     public let myId: Int
     
     var delegate: SpeechGrammarObject
+    var valueBlock: ((SpeechGrammarObject) -> AnyObject)?
     var tag: String
     
     private init(delegate: SpeechGrammarObject, tag: String) {
@@ -413,7 +429,9 @@ public class SGTagged: SpeechGrammarObject {
     }
     
     public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
-        return SGTagged(delegate: delegate.cloneWithContents(obj), tag: tag)
+        var clone = SGTagged(delegate: delegate.cloneWithContents(obj), tag: tag)
+        clone.valueBlock = valueBlock
+        return clone
     }
     
     public func getChildren() -> [SpeechGrammarObject]? {
@@ -429,6 +447,11 @@ public class SGTagged: SpeechGrammarObject {
     }
     
     public func asValue() -> Any? {
+        
+        if let block = valueBlock {
+            return block(delegate)
+        }
+        
         return delegate.asValue()
     }
     
@@ -444,6 +467,16 @@ public class SGTagged: SpeechGrammarObject {
     }
     
     public func setValue(block: (SpeechGrammarObject) -> AnyObject) -> SpeechGrammarObject {
-        return delegate.setValue(block)
+        valueBlock = block
+        return self
+    }
+    
+    public func withTag(tag: String) -> SpeechGrammarObject {
+        self.tag = tag
+        return self
+    }
+    
+    public func then(next: SpeechGrammarObject) -> SGPath {
+        return SGPath(path: [self, next])
     }
 }

@@ -218,7 +218,7 @@ public class SpeechRecognizer {
             stop()
             return false
         }
-
+        
         // attach listeners
         AEInstallEventHandler(AEEventClass(kAESpeechSuite), AEEventID(kAESpeechDone),
             appleEventCallback!, nil, Boolean(0))
