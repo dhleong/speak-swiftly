@@ -217,18 +217,25 @@ public class SpeechRecognizer {
         }
         
         if let grammar = self.grammar {
-            SRSetLanguageModel(recognizer, grammar.asLanguageObject(system))
+            theErr = SRSetLanguageModel(recognizer, grammar.asLanguageObject(system))
+            if OSStatus(theErr) != noErr {
+                stop()
+                return false
+            }
         } else {
             stop()
             return false
         }
         
         // attach listeners
-        AEInstallEventHandler(AEEventClass(kAESpeechSuite), AEEventID(kAESpeechDone),
+        theErr = AEInstallEventHandler(AEEventClass(kAESpeechSuite), AEEventID(kAESpeechDone),
             appleEventCallback!, nil, Boolean(0))
+        if OSStatus(theErr) != noErr {
+            stop()
+            return false
+        }
 
         var modes = kSRHasFeedbackHasListenModes
-        
         theErr = SRSetProperty(system,
             OSType(kSRFeedbackAndListeningModes), &modes,
             sizeof(UnsafePointer<Int>));
@@ -237,9 +244,13 @@ public class SpeechRecognizer {
             return false
         }
 
-        SRStartListening(recognizer)
+        theErr = SRStartListening(recognizer)
+        if OSStatus(theErr) != noErr {
+            stop()
+            return false
+        }
 
-        started = true;
+        started = true
         return true
     }
     

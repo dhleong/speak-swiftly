@@ -163,8 +163,27 @@ public class SGChoice: SGBaseObject, SpeechGrammarObject {
     var choices: [SpeechGrammarObject]
     var model: SRLanguageModel? = nil
     
-    init(pickFromStrings words: [String]) {
+    public init(pickFromStrings words: [String]) {
         self.choices = words.map { SGWord(from: $0) }
+    }
+    
+    /// Create a choice between words, whose values will be
+    ///  those provided in the dictionary
+    public init(pickFromStringsWithValues words: [String:String]) {
+        choices = [SpeechGrammarObject]()
+        for (word, value) in words {
+            choices.append(SGWord(from: word).setValue { _ in value })
+        }
+    }
+    
+    /// Create a choice between words, providing a Value function
+    ///  that can operate directly on the string
+    public convenience init(pickFromStrings words: [String], withValues choiceValueBlock: (String) -> String) {
+        self.init(pickFromStrings: words)
+        
+        for obj in choices {
+            obj.setValue({ choiceValueBlock(($0 as! SGWord).word) })
+        }
     }
     
     init(pickFrom words: [SpeechGrammarObject]) {
