@@ -112,7 +112,18 @@ public class SGWord: SGBaseObject, SpeechGrammarObject {
     var wordObj: SRWord? = nil
     
     init(from word: String) {
-        self.word = word
+        if let spaces = word.rangeOfString(" ") {
+            // Starting recognition with such a word will crash
+            //  with GPFLT or something. Luckily, OSX's speech
+            //  recognition seems to do pretty okay with the
+            //  spaces removed for small words.... Otherwise,
+            //  use a phrase
+            println("WARNING: SGWords may not contain spaces! (found \(word)); Truncating...")
+            self.word = word.stringByReplacingOccurrencesOfString(" ", withString: "")
+        } else {
+            
+            self.word = word
+        }
     }
     
     public override func asValue() -> Any? {
@@ -412,6 +423,7 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
 }
 
 /// Convenience for an object that may or may not be present
+// TODO There's actually an "optional" flag we can set!
 public class SGOptional: SGRepeat {
     init(with obj: SpeechGrammarObject) {
         super.init(repeat: obj, atLeast: 0, atMost: 1)

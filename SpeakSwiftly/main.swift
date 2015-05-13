@@ -29,10 +29,11 @@ func flatJoinAsString(arg: SpeechGrammarObject) -> AnyObject {
 }
 
 var airline = SGChoice(pickFromStringsWithValues: [
-    "speed bird": "BAW",
+    "speedbird": "BAW",
     "united": "UAL",
     "cactus": "AWE",
-    "air canada": "ACA",
+    "aircanada": "ACA",
+    "cessna": "N"
     ])
 
 var nato = SGChoice(pickFromStrings: ["alpha", "bravo", "charlie"], withValues: {
@@ -47,14 +48,14 @@ var number = SGChoice(pickFromStringsWithValues: [
     "seven": "7", "eight": "8", "niner": "9"])
 number.setValue(joinAsString)
 
-var letters = nato.repeated(atMost: 3).setValue(flatJoinAsString)
-var name = letters.then(number.optionally()).withTag("name")
-                .setValue(flatJoinAsString)
-//var numbers = number.repeated(atLeast: 3, atMost: 4).setValue(flatJoinAsString)
-//var letters = nato.repeated(exactly: 2).optionally().setValue(flatJoinAsString)
-//var name = airline.then(numbers)
-//            .withTag("name")
-//            .setValue(flatJoinAsString)
+//var letters = nato.repeated(atMost: 3).setValue(flatJoinAsString)
+//var name = letters.then(number.optionally()).withTag("name")
+//                .setValue(flatJoinAsString)
+var numbers = number.repeated(atLeast: 3, atMost: 4).setValue(flatJoinAsString)
+var letters = nato.repeated(atLeast: 0, atMost: 2).setValue(flatJoinAsString)
+var name = airline.optionally().then(numbers).then(letters)
+            .withTag("name")
+            .setValue(flatJoinAsString)
 var grammar = SGWord(from: "hello").then(name)
 
 var recognizer = SpeechRecognizer()
