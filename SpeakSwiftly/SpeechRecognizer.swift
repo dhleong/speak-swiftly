@@ -15,7 +15,7 @@ public protocol SpeechTextRecognizerDelegate {
     func onRecognition(text: String)
 }
 public protocol SpeechMeaningRecognizerDelegate {
-    func onRecognition(meanings: [String:AnyObject])
+    func onRecognition(meanings: [String:Any])
 }
 
 /// Convenience
@@ -33,13 +33,13 @@ public class SpeechTextAdapter: SpeechTextRecognizerDelegate {
 
 /// Convenience
 public class SpeechMeaningAdapter: SpeechMeaningRecognizerDelegate {
-    var closure: ([String:AnyObject]) -> ()
+    var closure: ([String:Any]) -> ()
     
-    init(with closure: ([String:AnyObject]) -> ()) {
+    init(with closure: ([String:Any]) -> ()) {
         self.closure = closure
     }
     
-    public func onRecognition(meanings: [String : AnyObject]) {
+    public func onRecognition(meanings: [String:Any]) {
         closure(meanings)
     }
 }
@@ -136,25 +136,29 @@ public class SpeechRecognizer {
             //  that follows the grammar's structure
             var shadow = grammarRoot.cloneWithContents(model)
             
-            dive(shadow, delegate: delegate, depth: 0)
+            var meanings = [String:Any]()
+            dive(shadow, meanings: &meanings)
+            delegate.onRecognition(meanings)
         } else {
             
             println("Unable to find root for \(model)")
         }
     }
     
-    func dive(obj: SpeechGrammarObject, delegate: SpeechMeaningRecognizerDelegate, depth: Int) {
+    private func dive(obj: SpeechGrammarObject, inout meanings: [String:Any]) {
         var kids = obj.getChildren()
         var tag = obj.getTag()
         
         if let tag = tag {
-            println("Value for \(tag) = \(obj.asValue())")
+            if let value = obj.asValue() {
+                meanings[tag] = value
+            }
             return
         }
 
         if let kids = kids {
             for kid in kids {
-                dive(kid, delegate: delegate, depth: (depth + 1))
+                dive(kid, meanings: &meanings)
             }
         }
         
