@@ -30,7 +30,7 @@ var airline = SGChoice(pickFromStringsWithValues: [
 var nato = SGChoice(pickFromStrings: ["alpha", "bravo", "charlie"], withValues: {
     $0.substringToIndex(advance($0.startIndex, 1)).uppercaseString
 })
-nato.setValue(joinAsString)
+nato.setValue(joinAsString) // this utility is provided by SpeakSwiftly
 
 // (some) numbers
 var number = SGChoice(pickFromStringsWithValues: [
@@ -43,7 +43,7 @@ var numbers = number.repeated(atLeast: 3, atMost: 4).setValue(flatJoinAsString)
 var letters = nato.repeated(exactly: 2).setValue(flatJoinAsString)
 var name = airline.optionally().then(numbers).then(letters.optionally())
             .withTag("name") // we'll be able to extract the name using this tag
-            .setValue(flatJoinAsString)
+            .setValue(flatJoinAsString) // this is also provided by SpeakSwiftly
 
 // just to prove tag extraction is real, add some words
 var grammar = SGWord(from: "hello").then(name)
@@ -73,35 +73,3 @@ recognizer.meaningDelegate = SpeechMeaningAdapter(with: {
 recognizer.setGrammar(grammar)
 recognizer.start()
 ```
-
-#### Utilities
-
-These may get merged into the library proper at some point
-
-```swift
-/// Convert a Choice whose values are strings (all of ours are)
-///  into a String
-func joinAsString(arg: SpeechGrammarObject) -> AnyObject {
-    var strings = arg.getChildren()?.map { $0.asValue()! as! String }
-    return "".join(strings!)
-}
-
-/// Convert a Repeat or a Path whose values may be arrays of
-///  Strings, into an array
-func flatJoinAsString(arg: SpeechGrammarObject) -> AnyObject {
-    var arrays = arg.getChildren()?.flatMap { (kid) -> [Any] in
-        if let value = kid.asValue() {
-            if value is String {
-                return [value]
-            } else {
-                return value as! [Any]
-            }
-        } else {
-            return []
-        }
-    }
-    return "".join(arrays!.map { $0 as! String })
-}
-
-```
-

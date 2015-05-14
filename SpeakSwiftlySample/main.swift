@@ -7,26 +7,8 @@
 //
 
 import Foundation
+import SpeakSwiftly
 
-func joinAsString(arg: SpeechGrammarObject) -> AnyObject {
-    var strings = arg.getChildren()?.map { $0.asValue()! as! String }
-    return "".join(strings!)
-}
-
-func flatJoinAsString(arg: SpeechGrammarObject) -> AnyObject {
-    var arrays = arg.getChildren()?.flatMap { (kid) -> [Any] in
-        if let value = kid.asValue() {
-            if value is String {
-                return [value]
-            } else {
-                return value as! [Any]
-            }
-        } else {
-            return []
-        }
-    }
-    return "".join(arrays!.map { $0 as! String })
-}
 
 var airline = SGChoice(pickFromStringsWithValues: [
     "speedbird": "BAW",
@@ -36,7 +18,10 @@ var airline = SGChoice(pickFromStringsWithValues: [
     "cessna": "N"
     ])
 
-var nato = SGChoice(pickFromStrings: ["alpha", "bravo", "charlie"], withValues: {
+var nato = SGChoice(pickFromStrings: ["alpha", "bravo", "charlie", "delta", "echo",
+    "foxtrot", "golf", "hotel", "india", "juliett", "kilo", "lima", "mike",
+    "november", "oscar", "papa", "quebec", "romeo", "sierra", "tango",
+    "uniform", "victor", "whiskey", "xray", "yankee", "zulu"], withValues: {
     $0.substringToIndex(advance($0.startIndex, 1)).uppercaseString
 })
 nato.setValue(joinAsString)

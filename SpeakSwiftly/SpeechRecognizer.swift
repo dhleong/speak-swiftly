@@ -22,7 +22,7 @@ public protocol SpeechMeaningRecognizerDelegate {
 public class SpeechTextAdapter: SpeechTextRecognizerDelegate {
     var closure: (String) -> ()
     
-    init(with closure: (String) -> ()) {
+    public init(with closure: (String) -> ()) {
         self.closure = closure
     }
     
@@ -35,7 +35,7 @@ public class SpeechTextAdapter: SpeechTextRecognizerDelegate {
 public class SpeechMeaningAdapter: SpeechMeaningRecognizerDelegate {
     var closure: ([String:Any]) -> ()
     
-    init(with closure: ([String:Any]) -> ()) {
+    public init(with closure: ([String:Any]) -> ()) {
         self.closure = closure
     }
     

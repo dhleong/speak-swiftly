@@ -183,7 +183,7 @@ public class SGWord: SGBaseObject, SpeechGrammarObject {
     let word: String
     var wordObj: SRWord? = nil
     
-    init(from word: String) {
+    public init(from word: String) {
         if let spaces = word.rangeOfString(" ") {
             // Starting recognition with such a word will crash
             //  with GPFLT or something. Luckily, OSX's speech
