@@ -13,10 +13,10 @@ import Foundation
 extension SRLanguageObject {
     
     func getRef<T>() -> T {
-        var ptr = UnsafeMutablePointer<T>.alloc(1)
+        let ptr = UnsafeMutablePointer<T>.alloc(1)
         var size = sizeof(UnsafeMutablePointer<T>)
         getProperty(kSRRefCon, result: ptr, resultSize: &size)
-        var result = ptr.memory
+        let result = ptr.memory
         ptr.dealloc(1)
         return result
     }
@@ -50,9 +50,9 @@ extension SRLanguageObject {
     }
     
     func setProperty(propertyTag: Int, value ptr: UnsafePointer<Void>) -> OSErr {
-        var result = SRSetProperty(self, OSType(propertyTag), ptr, sizeof(UnsafePointer<Void>))
+        let result = SRSetProperty(self, OSType(propertyTag), ptr, sizeof(UnsafePointer<Void>))
         if OSStatus(result) != noErr {
-            println("WARN: Error setting property \(propertyTag) on \(self): \(result)")
+            print("WARN: Error setting property \(propertyTag) on \(self): \(result)")
         }
         return result
     }
@@ -70,7 +70,7 @@ extension SRSpeechObject {
     //   you should call .release() on the resulting
     //   object from this call
     func getItem(index: Int) -> SRSpeechObject {
-        var object = SRSpeechObject()
+        var object: SRSpeechObject = nil
         SRGetIndexedItem(self, &object, index)
         return object
     }

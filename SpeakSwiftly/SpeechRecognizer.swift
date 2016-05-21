@@ -52,8 +52,8 @@ public class SpeechRecognizer {
     var bridgeBlock: COpaquePointer?
     var appleEventCallback: AEEventHandlerUPP?
     
-    var system: SRRecognitionSystem = SRRecognitionSystem()
-    var recognizer: SRRecognizer = SRRecognizer()
+    var system: SRRecognitionSystem = nil
+    var recognizer: SRRecognizer = nil
     var grammar: SpeechGrammarObject?
     
     var grammarObjects = [Int:SpeechGrammarObject]()
@@ -63,7 +63,7 @@ public class SpeechRecognizer {
     public init() {
 
         // see: http://stackoverflow.com/a/29375116
-        var appleBridge: @objc_block (AppleEventPtr, AppleEventPtr, Int) -> OSErr =
+        let appleBridge: @convention(block) (AppleEventPtr, AppleEventPtr, Int) -> OSErr =
         { (theAEevent, reply, refcon) in
             
             var actualType: DescType = DescType()
@@ -76,22 +76,22 @@ public class SpeechRecognizer {
                 &recognitionStatus, sizeof(UnsafePointer<OSErr>),
                 &actualSize);
             if OSStatus(theErr) != noErr {
-                println("Error getting speech status: \(theErr)")
+                print("Error getting speech status: \(theErr)")
                 return theErr
             }
             if OSStatus(recognitionStatus) != noErr {
-                println("Speech recognition error: \(recognitionStatus)")
+                print("Speech recognition error: \(recognitionStatus)")
                 return recognitionStatus
             }
             
-            var speechResult: SRRecognitionResult = SRRecognitionResult()
+            var speechResult: SRRecognitionResult = nil
             actualSize = 0
             theErr = AEGetParamPtr(theAEevent, OSType(keySRSpeechResult),
                 DescType(typeSRSpeechResult), &actualType,
                 &speechResult, sizeof(UnsafePointer<SRRecognitionResult>),
                 &actualSize)
             if OSStatus(theErr) != noErr {
-                println("Error getting recognition result: \(theErr)")
+                print("Error getting recognition result: \(theErr)")
                 return theErr
             }
 
@@ -115,15 +115,15 @@ public class SpeechRecognizer {
     }
     
     func handleResult(result: SRRecognitionResult, delegate: SpeechMeaningRecognizerDelegate) {
-        var modelPtr = UnsafeMutablePointer<SRLanguageModel>.alloc(1)
+        let modelPtr = UnsafeMutablePointer<SRLanguageModel>.alloc(1)
         var size: Int = sizeof(UnsafePointer<SRLanguageModel>)
-        var theErr = result.getProperty(kSRLanguageModelFormat, result: modelPtr, resultSize: &size)
+        let theErr = result.getProperty(kSRLanguageModelFormat, result: modelPtr, resultSize: &size)
         if OSStatus(theErr) != noErr {
-            println("GetLang ERROR = \(theErr)")
+            print("GetLang ERROR = \(theErr)")
             return
         }
         
-        var model = modelPtr.memory
+        let model = modelPtr.memory
         processResultModel(model, delegate: delegate)
         
         model.release()
@@ -134,20 +134,20 @@ public class SpeechRecognizer {
         if let grammarRoot = getObject(model) {
             // construct a shadow tree from the returned Object
             //  that follows the grammar's structure
-            var shadow = grammarRoot.cloneWithContents(model)
+            let shadow = grammarRoot.cloneWithContents(model)
             
             var meanings = [String:Any]()
             dive(shadow, meanings: &meanings)
             delegate.onRecognition(meanings)
         } else {
             
-            println("Unable to find root for \(model)")
+            print("Unable to find root for \(model)")
         }
     }
     
     private func dive(obj: SpeechGrammarObject, inout meanings: [String:Any]) {
-        var kids = obj.getChildren()
-        var tag = obj.getTag()
+        let kids = obj.getChildren()
+        let tag = obj.getTag()
         
         if let tag = tag {
             if let value = obj.asValue() {
@@ -188,11 +188,11 @@ public class SpeechRecognizer {
         workspace.append(grammar)
         
         while !workspace.isEmpty {
-            var current = workspace.removeLast()
+            let current = workspace.removeLast()
             grammarObjects[current.myId] = current
             
             if let kids = current.getChildren() {
-                workspace.extend(kids)
+                workspace.appendContentsOf(kids)
             }
         }
         
@@ -229,7 +229,7 @@ public class SpeechRecognizer {
         
         // attach listeners
         theErr = AEInstallEventHandler(AEEventClass(kAESpeechSuite), AEEventID(kAESpeechDone),
-            appleEventCallback!, nil, Boolean(0))
+            appleEventCallback!, nil, Bool(0))
         if OSStatus(theErr) != noErr {
             stop()
             return false
@@ -261,7 +261,7 @@ public class SpeechRecognizer {
     public func stop() {
         
         AERemoveEventHandler(AEEventClass(kAESpeechSuite), AEEventID(kAESpeechDone),
-            appleEventCallback!, Boolean(0))
+            appleEventCallback!, Bool(0))
         
         if (started) {
             SRStopListening(recognizer)
@@ -278,7 +278,7 @@ public class SpeechRecognizer {
     }
 
     private func getObject(srObj: SRLanguageObject) -> SpeechGrammarObject? {
-        var id: Int = srObj.getRef()
+        let id: Int = srObj.getRef()
         return grammarObjects[id]
     }
 }

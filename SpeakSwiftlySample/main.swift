@@ -22,7 +22,7 @@ var nato = SGChoice(pickFromStrings: ["alpha", "bravo", "charlie", "delta", "ech
     "foxtrot", "golf", "hotel", "india", "juliett", "kilo", "lima", "mike",
     "november", "oscar", "papa", "quebec", "romeo", "sierra", "tango",
     "uniform", "victor", "whiskey", "xray", "yankee", "zulu"], withValues: {
-    $0.substringToIndex(advance($0.startIndex, 1)).uppercaseString
+    $0.substringToIndex($0.startIndex.advancedBy(1)).uppercaseString
 })
 nato.setValue(joinAsString)
 
@@ -36,7 +36,7 @@ number.setValue(joinAsString)
 //var letters = nato.repeated(atMost: 3).setValue(flatJoinAsString)
 //var name = letters.then(number.optionally()).withTag("name")
 //                .setValue(flatJoinAsString)
-var numbers = number.repeated(atLeast: 3, atMost: 4).setValue(flatJoinAsString)
+var numbers = number.repeated(3, atMost: 4).setValue(flatJoinAsString)
 var letters = nato.repeated(exactly: 2).setValue(flatJoinAsString)
 var name = airline.optionally().then(numbers).then(letters.optionally())
             .withTag("name")
@@ -44,14 +44,14 @@ var name = airline.optionally().then(numbers).then(letters.optionally())
 var grammar = SGWord(from: "hello").then(name)
 
 var recognizer = SpeechRecognizer()
-recognizer.textDelegate = SpeechTextAdapter(with: { println("Text: `\($0)`") })
-recognizer.meaningDelegate = SpeechMeaningAdapter(with: { println("Meanings: \($0)") })
+recognizer.textDelegate = SpeechTextAdapter(with: { print("Text: `\($0)`") })
+recognizer.meaningDelegate = SpeechMeaningAdapter(with: { print("Meanings: \($0)") })
 recognizer.setGrammar(grammar)
-println("Starting...")
+print("Starting...")
 
 if recognizer.start() {
 
-    println("Started!")
+    print("Started!")
 
 //    while (true) {
 //        recognizer.idle()
@@ -61,6 +61,6 @@ if recognizer.start() {
     dispatch_main()
 } else {
     
-    println("Failed to initialize")
+    print("Failed to initialize")
 }
 

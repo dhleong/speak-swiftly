@@ -16,6 +16,7 @@
 		B662199E1B04DF5800074518 /* SRExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60D53D81B00F1BC00186667 /* SRExtensions.swift */; };
 		B66219AE1B04E14200074518 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6A64B351AFC6B24000FAA82 /* main.swift */; };
 		B66219B51B04E3FC00074518 /* SpeakSwiftly.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B66219831B04DF2A00074518 /* SpeakSwiftly.framework */; };
+		B686107E1CF07FEF00013AEE /* SpeakSwiftly.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B686107D1CF07FEF00013AEE /* SpeakSwiftly.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,7 +54,7 @@
 		B66219931B04DF2A00074518 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B66219941B04DF2A00074518 /* SpeakSwiftlyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakSwiftlyTests.swift; sourceTree = "<group>"; };
 		B66219A31B04DF7D00074518 /* SpeakSwiftlySample */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SpeakSwiftlySample; sourceTree = BUILT_PRODUCTS_DIR; };
-		B66219B61B04E44F00074518 /* SpeakSwiftly.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SpeakSwiftly.framework; path = "../../../Library/Developer/Xcode/DerivedData/SpeakSwiftly-asmctmecizlggtdgrhdtthxymltz/Build/Products/Debug/SpeakSwiftly.framework"; sourceTree = "<group>"; };
+		B686107D1CF07FEF00013AEE /* SpeakSwiftly.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SpeakSwiftly.framework; path = "../../../Library/Developer/Xcode/DerivedData/SpeakSwiftly-gobbffzrkxvdngblggpkvzvsysfa/Build/Products/Debug/SpeakSwiftly.framework"; sourceTree = "<group>"; };
 		B6A64B351AFC6B24000FAA82 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		B6D7F6571AFFAAEF003848B0 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -78,6 +79,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B686107E1CF07FEF00013AEE /* SpeakSwiftly.framework in Frameworks */,
 				B66219B51B04E3FC00074518 /* SpeakSwiftly.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -113,7 +115,7 @@
 		B66219A41B04DF7D00074518 /* SpeakSwiftlySample */ = {
 			isa = PBXGroup;
 			children = (
-				B66219B61B04E44F00074518 /* SpeakSwiftly.framework */,
+				B686107D1CF07FEF00013AEE /* SpeakSwiftly.framework */,
 				B6A64B351AFC6B24000FAA82 /* main.swift */,
 			);
 			path = SpeakSwiftlySample;
@@ -226,7 +228,9 @@
 		B6A64B2A1AFC6B24000FAA82 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0630;
+				LastSwiftMigration = 0730;
+				LastSwiftUpdateCheck = 0730;
+				LastUpgradeCheck = 0730;
 				ORGANIZATIONNAME = "Daniel Leong";
 				TargetAttributes = {
 					B66219821B04DF2A00074518 = {
@@ -333,6 +337,7 @@
 				INFOPLIST_FILE = SpeakSwiftly/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "net.dhleong.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -354,8 +359,9 @@
 				INFOPLIST_FILE = SpeakSwiftly/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "net.dhleong.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
+				SKIP_INSTALL = NO;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
@@ -375,6 +381,7 @@
 				);
 				INFOPLIST_FILE = SpeakSwiftlyTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "net.dhleong.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -389,6 +396,7 @@
 				);
 				INFOPLIST_FILE = SpeakSwiftlyTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "net.dhleong.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -443,6 +451,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;

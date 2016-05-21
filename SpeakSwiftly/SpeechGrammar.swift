@@ -51,7 +51,8 @@ public class SGBaseObject {
     var valueBlock: ((SpeechGrammarObject) -> AnyObject)?
     
     private init() {
-        myId = SGBaseObject.nextId++
+        SGBaseObject.nextId += 1
+        myId = SGBaseObject.nextId
     }
     
     public func asValue() -> Any? {
@@ -79,12 +80,12 @@ public class SGBaseObject {
     
     /// Wrap this Object in a Repeat for the provided range
     public func repeated(atLeast: Int = 1, atMost: Int) -> SGRepeat {
-        return SGRepeat(repeat: self as! SpeechGrammarObject, atLeast: atLeast, atMost: atMost)
+        return SGRepeat(what: self as! SpeechGrammarObject, atLeast: atLeast, atMost: atMost)
     }
     
     /// Wrap this Object in a Repeat for exactly the number of times provided
     public func repeated(exactly times: Int) -> SGRepeat {
-        return SGRepeat(repeat: self as! SpeechGrammarObject, atLeast: times, atMost: times)
+        return SGRepeat(what: self as! SpeechGrammarObject, atLeast: times, atMost: times)
     }
     
     /// Create a Path starting with `self` then proceeding to `next`
@@ -149,7 +150,7 @@ public class _SGDelegate: SpeechGrammarObject {
     }
     
     public func asLanguageObject(system: SRRecognitionSystem) -> SRLanguageObject {
-        var obj = delegate.asLanguageObject(system)
+        let obj = delegate.asLanguageObject(system)
         var id = myId
         obj.setRef(&id)
         return obj
@@ -184,13 +185,13 @@ public class SGWord: SGBaseObject, SpeechGrammarObject {
     var wordObj: SRWord? = nil
     
     public init(from word: String) {
-        if let spaces = word.rangeOfString(" ") {
+        if word.rangeOfString(" ") != nil {
             // Starting recognition with such a word will crash
             //  with GPFLT or something. Luckily, OSX's speech
             //  recognition seems to do pretty okay with the
             //  spaces removed for small words.... Otherwise,
             //  use a phrase
-            println("WARNING: SGWords may not contain spaces! (found \(word)); Truncating...")
+            print("WARNING: SGWords may not contain spaces! (found \(word)); Truncating...")
             self.word = word.stringByReplacingOccurrencesOfString(" ", withString: "")
         } else {
             
@@ -226,10 +227,8 @@ public class SGWord: SGBaseObject, SpeechGrammarObject {
             return wordObj
         }
         
-        var myId = self.myId
-
-        var obj = SRWord()
-        SRNewWord(system, &obj, word, Int32(count(word)))
+        var obj:SRWord = nil
+        SRNewWord(system, &obj, word, Int32(word.characters.count))
         setSelfRef(obj)
         self.wordObj = obj
         return obj
@@ -291,22 +290,22 @@ public class SGChoice: SGBaseObject, SpeechGrammarObject {
         
         if obj.getCount() != 1 {
             // the choice should have been made!
-            println("EXPECTED CHOICE SIZE 1 but was \(obj.getCount())!!")
+            print("EXPECTED CHOICE SIZE 1 but was \(obj.getCount())!!")
         }
         
-        var chosen = obj.getItem(0)
-        var chosenId: Int = chosen.getRef()
+        let chosen = obj.getItem(0)
+        let chosenId: Int = chosen.getRef()
         for choice in choices {
             if choice.myId == chosenId {
-                var clone = SGChoice(pickFrom: [choice.cloneWithContents(chosen)])
+                let clone = SGChoice(pickFrom: [choice.cloneWithContents(chosen)])
                 clone.valueBlock = valueBlock
                 return clone
             }
         }
         
         // shouldn't happen
-        var members = choices.map { $0.myId }
-        println("\(obj.getText()) CHOSE \(chosenId) but NOT a member! (\(members))")
+        let members = choices.map { $0.myId }
+        print("\(obj.getText()) CHOSE \(chosenId) but NOT a member! (\(members))")
         return self
     }
     
@@ -330,14 +329,14 @@ public class SGChoice: SGBaseObject, SpeechGrammarObject {
             return model
         }
         
-        var newModel = SRLanguageModel()
+        var newModel:SRLanguageModel = nil
         SRNewLanguageModel(system, &newModel, "Choice", 6)
         setSelfRef(newModel)
         
         // sort the objects before adding---order is important!
         //  longer phrases MUST be before shorter ones for the
         //  system to recognize them
-        choices.sort() { $0.length() > $1.length() }
+        choices.sortInPlace() { $0.length() > $1.length() }
         
         for word in choices {
             SRAddLanguageObject(newModel, word.asLanguageObject(system))
@@ -372,7 +371,7 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
         }
        
         // There should only be one item when we get the value
-        var value = objs.map { $0.asValue() }
+        let value = objs.map { $0.asValue() }
                         .filter { $0 != nil } // remove nils
                         .map { $0! } // the remaining are non-nil
         return value.isEmpty ? nil : value
@@ -381,7 +380,7 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
     public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
         
         if obj.getCount() != objs.count {
-            println("Count mismatch!! \(obj.getCount()) != \(objs.count)")
+            print("Count mismatch!! \(obj.getCount()) != \(objs.count)")
         }
         
         var shadowPath = [SpeechGrammarObject]()
@@ -389,7 +388,7 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
             shadowPath.append(objs[i].cloneWithContents(obj.getItem(i)))
         }
         
-        var clone = SGPath(path: shadowPath)
+        let clone = SGPath(path: shadowPath)
         clone.valueBlock = valueBlock
         return clone
     }
@@ -420,7 +419,7 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
             return path
         }
         
-        var newPath = SRPath()
+        var newPath:SRPath = nil
         SRNewPath(system, &newPath)
         setSelfRef(newPath)
         
@@ -442,17 +441,17 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
     
     let delegate: SGChoice
     
-    init(repeat: SpeechGrammarObject, atLeast rawMin: Int = 1, atMost max: Int) {
+    init(what: SpeechGrammarObject, atLeast rawMin: Int = 1, atMost max: Int) {
         delegate = SGChoice(pickFrom: [])
 
         var min = rawMin
         if min == 0 {
             delegate.addChoice(SGEmpty.INSTANCE)
-            min++
+            min += 1
         }
         
         for i in min...max {
-            var repeated = SGPath(path: [SpeechGrammarObject](count: i, repeatedValue: repeat))
+            let repeated = SGPath(path: [SpeechGrammarObject](count: i, repeatedValue: what))
             delegate.addChoice(repeated)
         }
     }
@@ -472,7 +471,7 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
     
     public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
         // NB: I have NO idea why it won't let me set valueBlock in the constructor...
-        var clone = SGRepeat(clone: self, with: obj)
+        let clone = SGRepeat(clone: self, with: obj)
         clone.valueBlock = valueBlock
         return clone
     }
@@ -497,11 +496,11 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
 /// Convenience for an object that may or may not be present
 public class SGOptional: SGRepeat {
     init(with obj: SpeechGrammarObject) {
-        super.init(repeat: obj, atLeast: 0, atMost: 1)
+        super.init(what: obj, atLeast: 0, atMost: 1)
     }
     
     public override func asValue() -> Any? {
-        var value = super.asValue()
+        let value = super.asValue()
         if value is [Any] {
             // it should be
             return (value as! [Any]).first
@@ -556,7 +555,7 @@ public class SGTagged: _SGDelegate {
     }
     
     public override func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
-        var clone = SGTagged(delegate: delegate.cloneWithContents(obj), tag: tag)
+        let clone = SGTagged(delegate: delegate.cloneWithContents(obj), tag: tag)
         clone.valueBlock = valueBlock
         return clone
     }
