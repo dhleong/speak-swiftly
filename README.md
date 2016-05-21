@@ -1,4 +1,4 @@
-SpeakSwiftly
+SpeakSwiftly [![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
 ============
 
 *Tell your computer what to do*
@@ -28,25 +28,25 @@ var airline = SGChoice(pickFromStringsWithValues: [
 
 // (some) nato phonetic numbers
 var nato = SGChoice(pickFromStrings: ["alpha", "bravo", "charlie"], withValues: {
-    $0.substringToIndex(advance($0.startIndex, 1)).uppercaseString
+    $0.substringToIndex($0.startIndex.advancedBy(1)).uppercaseString
 })
 nato.setValue(joinAsString) // this utility is provided by SpeakSwiftly
 
 // (some) numbers
-var number = SGChoice(pickFromStringsWithValues: [
+let number = SGChoice(pickFromStringsWithValues: [
     "zero": "0", "one": "1", "two": "2", "three": "3"])
 number.setValue(joinAsString)
 
 //  EG: N241AB, BAW2451
 //  The airline may be omitted if unambiguous after initial contact
-var numbers = number.repeated(atLeast: 3, atMost: 4).setValue(flatJoinAsString)
-var letters = nato.repeated(exactly: 2).setValue(flatJoinAsString)
-var name = airline.optionally().then(numbers).then(letters.optionally())
+let numbers = number.repeated(3, atMost: 4).setValue(flatJoinAsString)
+let letters = nato.repeated(exactly: 2).setValue(flatJoinAsString)
+let name = airline.optionally().then(numbers).then(letters.optionally())
             .withTag("name") // we'll be able to extract the name using this tag
             .setValue(flatJoinAsString) // this is also provided by SpeakSwiftly
 
 // just to prove tag extraction is real, add some words
-var grammar = SGWord(from: "hello").then(name)
+let grammar = SGWord(from: "hello").then(name)
 ```
 
 ```swift
