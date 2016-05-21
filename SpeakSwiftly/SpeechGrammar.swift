@@ -379,13 +379,26 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
     
     public func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
         
-        if obj.getCount() != objs.count {
-            print("Count mismatch!! \(obj.getCount()) != \(objs.count)")
-        }
+        let objKids = obj.getCount()
+        // NB: for whatever reason, this is normal, now. Optional stuff
+        //  might just not be present in the SRObj
+//        if objKids != objs.count {
+//            print("\(obj.getText()) Count mismatch!! \(obj.getCount()) != \(objs.count)")
+//        }
         
         var shadowPath = [SpeechGrammarObject]()
+        var j = 0
         for i in 0..<objs.count {
-            shadowPath.append(objs[i].cloneWithContents(obj.getItem(i)))
+            
+            let objKid = obj.getItem(j)
+            if (objKid.getRef() == objs[i].myId) {
+                shadowPath.append(objs[i].cloneWithContents(objKid))
+                j += 1
+                
+                if (j >= objKids) {
+                    break;
+                }
+            }
         }
         
         let clone = SGPath(path: shadowPath)
