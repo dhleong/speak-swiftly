@@ -9,6 +9,15 @@
 import Carbon
 import Foundation
 
+private extension Int {
+    /// IE: The old x++
+    mutating func getAndIncrement() -> Int {
+        let result = self;
+        self += 1
+        return result;
+    }
+}
+
 public protocol SpeechGrammarObject {
     
     /// A unique Int id for this object
@@ -51,8 +60,7 @@ public class SGBaseObject {
     var valueBlock: ((SpeechGrammarObject) -> AnyObject)?
     
     private init() {
-        SGBaseObject.nextId += 1
-        myId = SGBaseObject.nextId
+        myId = SGBaseObject.nextId.getAndIncrement();
     }
     
     public func asValue() -> Any? {
