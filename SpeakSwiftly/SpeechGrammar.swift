@@ -533,6 +533,10 @@ public class SGOptional: SGRepeat {
         super.init(what: obj, atLeast: 0, atMost: 1)
     }
     
+    private init(clone: SGOptional, with obj: SRLanguageObject) {
+        super.init(clone: clone, with: obj)
+    }
+    
     public override func asValue() -> Any? {
         let value = super.asValue()
         if value is [Any] {
@@ -541,6 +545,13 @@ public class SGOptional: SGRepeat {
         }
         
         return value
+    }
+    
+    public override func cloneWithContents(obj: SRLanguageObject) -> SpeechGrammarObject {
+        // See: SGRepeat
+        let clone = SGOptional(clone: self, with: obj)
+        clone.valueBlock = valueBlock
+        return clone
     }
 }
 

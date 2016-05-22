@@ -46,7 +46,9 @@ var greeting = SGChoice(between:[
     SGPath(from: "whats up")])
     .withTag("greeting")
     .setValue(flatJoinAsString)
-var grammar = greeting .then(name)
+var grammar = greeting
+    .then(SGWord(from: "mister").optionally().withTag("too-formal"))
+    .then(name)
 
 var recognizer = SpeechRecognizer()
 recognizer.textDelegate = SpeechTextAdapter(with: { print("Text: `\($0)`") })
