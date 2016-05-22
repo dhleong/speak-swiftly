@@ -373,6 +373,18 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
         self.objs = objs
     }
     
+    /// Construct a path from space-separated words in a string
+    public convenience init(from str: String) {
+        self.init(fromWords: str.componentsSeparatedByString(" "))
+        
+        setValue(flatJoinWithSeparator(" "))
+    }
+    
+    /// Construct a path from words in a String array
+    public convenience init(fromWords words: [String]) {
+        self.init(path: words.map { SGWord(from: $0) })
+    }
+    
     public override func asValue() -> Any? {
         
         if let providedValue = super.asValue() {

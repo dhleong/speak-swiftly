@@ -40,9 +40,10 @@ var name = airline.optionally().then(numbers).then(letters.optionally())
             .setValue(flatJoinAsString)
 var greeting = SGChoice(between:[
     // NB: there's a convenience for word choices (shown above), but you an also
-    //  specify your own branches as well:
+    //  specify your own branches with objects, as well:
     SGWord(from: "hello"),
-    SGWord(from: "goodbye")])
+    SGWord(from: "goodbye"),
+    SGPath(from: "whats up")])
     .withTag("greeting")
     .setValue(flatJoinAsString)
 var grammar = greeting .then(name)
