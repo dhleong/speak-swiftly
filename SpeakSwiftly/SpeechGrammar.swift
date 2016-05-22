@@ -98,7 +98,7 @@ public class SGBaseObject {
     
     /// Create a Path starting with `self` then proceeding to `next`
     public func then(next: SpeechGrammarObject) -> SGPath {
-        return SGPath(path: [self as! SpeechGrammarObject, next])
+        return SGPath(withObjs: [self as! SpeechGrammarObject, next])
     }
     
     public func getTag() -> String? {
@@ -182,7 +182,7 @@ public class _SGDelegate: SpeechGrammarObject {
     }
     
     public func then(next: SpeechGrammarObject) -> SGPath {
-        return SGPath(path: [self, next])
+        return SGPath(withObjs: [self, next])
     }
 }
 
@@ -369,7 +369,7 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
     var objs: [SpeechGrammarObject]
     var path: SRPath? = nil
     
-    init(path objs: [SpeechGrammarObject]) {
+    public init(withObjs objs: [SpeechGrammarObject]) {
         self.objs = objs
     }
     
@@ -382,7 +382,7 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
     
     /// Construct a path from words in a String array
     public convenience init(fromWords words: [String]) {
-        self.init(path: words.map { SGWord(from: $0) })
+        self.init(withObjs: words.map { SGWord(from: $0) })
     }
     
     public override func asValue() -> Any? {
@@ -422,7 +422,7 @@ public class SGPath: SGBaseObject, SpeechGrammarObject {
             }
         }
         
-        let clone = SGPath(path: shadowPath)
+        let clone = SGPath(withObjs: shadowPath)
         clone.valueBlock = valueBlock
         return clone
     }
@@ -485,7 +485,7 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
         }
         
         for i in min...max {
-            let repeated = SGPath(path: [SpeechGrammarObject](count: i, repeatedValue: what))
+            let repeated = SGPath(withObjs: [SpeechGrammarObject](count: i, repeatedValue: what))
             delegate.addChoice(repeated)
         }
     }
@@ -570,7 +570,7 @@ internal class SGEmpty: SGPath {
     static let INSTANCE = SGEmpty()
     
     private init() {
-        super.init(path: [])
+        super.init(withObjs: [])
     }
     
     override func asValue() -> Any? {
