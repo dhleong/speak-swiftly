@@ -33,15 +33,19 @@ var number = SGChoice(pickFromStringsWithValues: [
     "seven": "7", "eight": "8", "niner": "9"])
 number.setValue(joinAsString)
 
-//var letters = nato.repeated(atMost: 3).setValue(flatJoinAsString)
-//var name = letters.then(number.optionally()).withTag("name")
-//                .setValue(flatJoinAsString)
 var numbers = number.repeated(3, atMost: 4).setValue(flatJoinAsString)
 var letters = nato.repeated(exactly: 2).setValue(flatJoinAsString)
 var name = airline.optionally().then(numbers).then(letters.optionally())
             .withTag("name")
             .setValue(flatJoinAsString)
-var grammar = SGWord(from: "hello").then(name)
+var greeting = SGChoice(between:[
+    // NB: there's a convenience for word choices (shown above), but you an also
+    //  specify your own branches as well:
+    SGWord(from: "hello"),
+    SGWord(from: "goodbye")])
+    .withTag("greeting")
+    .setValue(flatJoinAsString)
+var grammar = greeting .then(name)
 
 var recognizer = SpeechRecognizer()
 recognizer.textDelegate = SpeechTextAdapter(with: { print("Text: `\($0)`") })

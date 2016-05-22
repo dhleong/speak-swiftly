@@ -276,8 +276,9 @@ public class SGChoice: SGBaseObject, SpeechGrammarObject {
         }
     }
     
-    init(pickFrom words: [SpeechGrammarObject]) {
-        self.choices = words
+    /// Create a choice between grammar objects constructed elsewhere
+    public init(between choices: [SpeechGrammarObject]) {
+        self.choices = choices
     }
     
     public override func asValue() -> Any? {
@@ -305,7 +306,7 @@ public class SGChoice: SGBaseObject, SpeechGrammarObject {
         let chosenId: Int = chosen.getRef()
         for choice in choices {
             if choice.myId == chosenId {
-                let clone = SGChoice(pickFrom: [choice.cloneWithContents(chosen)])
+                let clone = SGChoice(between: [choice.cloneWithContents(chosen)])
                 clone.valueBlock = valueBlock
                 return clone
             }
@@ -463,7 +464,7 @@ public class SGRepeat: SGBaseObject, SpeechGrammarObject {
     let delegate: SGChoice
     
     init(what: SpeechGrammarObject, atLeast rawMin: Int = 1, atMost max: Int) {
-        delegate = SGChoice(pickFrom: [])
+        delegate = SGChoice(between: [])
 
         var min = rawMin
         if min == 0 {
